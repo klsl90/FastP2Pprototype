@@ -1,737 +1,745 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<metacharset="UTF-8">
-<metaname="viewport"content="width=device-width, initial-scale=1.0">
-<title>TrendyolPay Mobil</title>
-<scriptsrc="https://cdn.tailwindcss.com"></script>
-<!-- Lucide Icons -->
-<scriptsrc="https://unpkg.com/lucide@latest"></script>
-<style>
-/* Ana konteyner yüksekliğini ve yazı tipini ayarlama */
-#app-container {
-font-family:'Inter', sans-serif;
-background-color:#f9fafb; /* gray-50 */
-max-width:420px; /* Mobil genişliği simüle etme */
-height:800px; /* Sabit yükseklik */
-margin:0auto;
-box-shadow:020px25px-5pxrgba(0, 0, 0, 0.1), 010px10px-5pxrgba(0, 0, 0, 0.04);
-border-radius:1rem;
-overflow:hidden;
-display:flex;
-flex-direction:column;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrendyolPay Mobil</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Ana konteyner yüksekliğini ve yazı tipini ayarlama */
+        #app-container {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb; /* gray-50 */
+            max-width: 420px; /* Mobil genişliği simüle etme */
+            height: 800px; /* Sabit yükseklik */
+            margin: 0 auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-radius: 1rem;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
 
-/* Kaydırma çubuğunu gizleme (mobil görünüm için) */
-main::-webkit-scrollbar {
-display:none;
-}
-main {
--ms-overflow-style:none; /* IE and Edge */
-scrollbar-width:none; /* Firefox */
-}
- 
-/* iOS Safe Area desteği için Tailwind kullanımı */
-.safe-area-bottom {
-padding-bottom:env(safe-area-inset-bottom);
-}
-</style>
+        /* Kaydırma çubuğunu gizleme (mobil görünüm için) */
+        main::-webkit-scrollbar {
+            display: none;
+        }
+        main {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
+        
+        /* iOS Safe Area desteği için Tailwind kullanımı */
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
 </head>
 <body>
 
-<divid="app-container">
-<!-- Ana İçerik ve Navigasyon JS ile doldurulacak -->
-</div>
+    <div id="app-container">
+        <!-- Ana İçerik ve Navigasyon JS ile doldurulacak -->
+    </div>
 
-<script>
-constAPP_CONTAINER = document.getElementById('app-container');
+    <script>
+        const APP_CONTAINER = document.getElementById('app-container');
 
-// --- STATE YÖNETİMİ ---
-let state = {
-activeScreen: 'home', // 'home', 'send', 'deposit'
-balanceVisible: true,
-transactions: [
-{ id: 1, type: 'send', name: 'Ayşe Yılmaz', amount: -150.00, icon: 'arrow-down-left', color: 'text-red-500' },
-{ id: 2, type: 'coffee', name: 'Espresso Bar', amount: -45.50, icon: 'coffee', color: 'text-gray-600' },
-{ id: 3, type: 'shop', name: 'Trendyol Market', amount: -320.75, icon: 'shopping-bag', color: 'text-gray-600' },
-],
-// Para Gönder Akışı
-sendFlowState: 'form', // 'form', 'loading', 'success', 'error'
-sendAmount: '',
-sendRecipientTab: 'new', // 'new', 'saved'
-sendMethodTab: 'iban', // 'iban', 'phone', 'other'
-otherMethodType: 'tckn', // 'tckn', 'email'
-recipientIBAN: '',
-recipientName: '',
-recipientPhone: '',
-recipientOther: '',
-saveRecipient: false,
-// Para Yükle Akışı
-depositMethod: 'card', // 'card', 'iban'
-copied: false,
-};
+        // --- STATE YÖNETİMİ ---
+        let state = {
+            activeScreen: 'home', // 'home', 'send', 'deposit'
+            balanceVisible: true,
+            transactions: [
+                { id: 1, type: 'send', name: 'Ayşe Yılmaz', amount: -150.00, icon: 'arrow-down-left', color: 'text-red-500' },
+                { id: 2, type: 'coffee', name: 'Espresso Bar', amount: -45.50, icon: 'coffee', color: 'text-gray-600' },
+                { id: 3, type: 'shop', name: 'Trendyol Market', amount: -320.75, icon: 'shopping-bag', color: 'text-gray-600' },
+            ],
+            // Para Gönder Akışı
+            sendFlowState: 'form', // 'form', 'loading', 'success', 'error'
+            sendAmount: '',
+            sendRecipientTab: 'new', // 'new', 'saved'
+            sendMethodTab: 'iban', // 'iban', 'phone', 'other'
+            otherMethodType: 'tckn', // 'tckn', 'email'
+            recipientIBAN: '',
+            recipientName: '',
+            recipientPhone: '',
+            recipientOther: '',
+            saveRecipient: false,
+            // Para Yükle Akışı
+            depositMethod: 'card', // 'card', 'iban'
+            copied: false,
+        };
 
-// --- YARDIMCI FONKSİYONLAR ---
+        // --- YARDIMCI FONKSİYONLAR ---
 
-function setState(newState) {
-state = { ...state, ...newState };
-render(); // State değiştiğinde yeniden çiz
-}
+        function setState(newState) {
+            state = { ...state, ...newState };
+            render(); // State değiştiğinde yeniden çiz
+        }
 
-function resetFlows() {
-setState({
-sendFlowState: 'form',
-sendAmount: '',
-sendRecipientTab: 'new',
-sendMethodTab: 'iban',
-otherMethodType: 'tckn',
-recipientIBAN: '',
-recipientName: '',
-recipientPhone: '',
-recipientOther: '',
-saveRecipient: false,
-depositMethod: 'card',
-copied: false,
-});
-}
+        function resetFlows() {
+            setState({
+                sendFlowState: 'form',
+                sendAmount: '',
+                sendRecipientTab: 'new',
+                sendMethodTab: 'iban',
+                otherMethodType: 'tckn',
+                recipientIBAN: '',
+                recipientName: '',
+                recipientPhone: '',
+                recipientOther: '',
+                saveRecipient: false,
+                depositMethod: 'card',
+                copied: false,
+            });
+        }
 
-// Güvenli İkon Çekme Fonksiyonu
-function getIconHtml(iconName, size = 20, className = '') {
-if (window.lucide && window.lucide.icons && window.lucide.icons[iconName]) {
-const icon = window.lucide.icons[iconName];
-return icon.toSvg({
-width: size,
-height: size,
-class: className
-});
-}
-// İkon bulunamazsa, sadece boş bir span döndür.
-return`<span class="lucide lucide-${iconName}" data-lucide="${iconName}" style="width: ${size}px; height: ${size}px; display: inline-block;"></span>`;
-}
+        // Güvenli İkon Çekme Fonksiyonu
+        function getIconHtml(iconName, size = 20, className = '') {
+            if (window.lucide && window.lucide.icons && window.lucide.icons[iconName]) {
+                const icon = window.lucide.icons[iconName];
+                return icon.toSvg({ 
+                    width: size, 
+                    height: size, 
+                    class: className 
+                });
+            }
+            // İkon bulunamazsa, sadece boş bir span döndür.
+            return `<span class="lucide lucide-${iconName}" data-lucide="${iconName}" style="width: ${size}px; height: ${size}px; display: inline-block;"></span>`; 
+        }
 
-// --- İŞLEM FONKSİYONLARI ---
+        // --- İŞLEM FONKSİYONLARI ---
 
-function handleCopyIban() {
-const ibanToCopy = 'TR120000000000000000000000';
-const textArea = document.createElement("textarea");
-textArea.value = ibanToCopy;
-textArea.style.position = "fixed";
-textArea.style.top = "-9999px";
-textArea.style.left = "-9999px";
-document.body.appendChild(textArea);
-textArea.select();
-try {
-document.execCommand('copy');
-setState({ copied: true });
-setTimeout(() => setState({ copied: false }), 2000);
-} catch (e) {
-console.error('Kopyalama başarısız', e);
-alert('Kopyalama başarısız oldu.');
-}
-document.body.removeChild(textArea);
-}
+        function handleCopyIban() {
+            const ibanToCopy = 'TR120000000000000000000000';
+            const textArea = document.createElement("textarea");
+            textArea.value = ibanToCopy;
+            textArea.style.position = "fixed";
+            textArea.style.top = "-9999px";
+            textArea.style.left = "-9999px";
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                setState({ copied: true });
+                setTimeout(() => setState({ copied: false }), 2000);
+            } catch (e) {
+                console.error('Kopyalama başarısız', e);
+                alert('Kopyalama başarısız oldu.');
+            }
+            document.body.removeChild(textArea);
+        }
 
-function handleSendSubmit() {
-if (!state.sendAmount || parseFloat(state.sendAmount) <= 0) {
-setState({ sendFlowState: 'error' });
-return;
-}
- 
-setState({ sendFlowState: 'loading' });
- 
-setTimeout(() => {
-setState({ sendFlowState: 'success' });
- 
-let finalRecipientName = state.recipientName || state.recipientPhone || state.recipientOther || (state.recipientIBAN.length > 5 ? 'Banka Müşterisi' : 'Banka Alıcısı');
- 
-const newTransaction = {
-id: state.transactions.length + 1,
-type: 'send',
-name: finalRecipientName,
-amount: -parseFloat(state.sendAmount),
-icon: 'arrow-down-left',
-color: 'text-red-500'
-};
- 
-setState({ transactions: [newTransaction, ...state.transactions] });
-}, 2000);
-}
+        function handleSendSubmit() {
+            if (!state.sendAmount || parseFloat(state.sendAmount) <= 0) {
+                setState({ sendFlowState: 'error' });
+                return;
+            }
+            
+            setState({ sendFlowState: 'loading' });
+            
+            setTimeout(() => {
+                setState({ sendFlowState: 'success' });
+                
+                let finalRecipientName = state.recipientName || state.recipientPhone || state.recipientOther || (state.recipientIBAN.length > 5 ? 'Banka Müşterisi' : 'Banka Alıcısı');
+                
+                const newTransaction = {
+                    id: state.transactions.length + 1,
+                    type: 'send',
+                    name: finalRecipientName,
+                    amount: -parseFloat(state.sendAmount),
+                    icon: 'arrow-down-left',
+                    color: 'text-red-500'
+                };
+                
+                setState({ transactions: [newTransaction, ...state.transactions] });
+            }, 2000);
+        }
 
-// --- TEMEL BİLEŞENLER (HTML String) ---
+        // --- TEMEL BİLEŞENLER (HTML String) ---
 
-functionInputWithLabel({ label, placeholder, value, name, prefix = null, icon = null, disabled = false, type = 'text', eventName, inputMode = 'text' }) {
-return`
-<div>
-<label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-${label}
-</label>
-<div class="bg-white p-4 rounded-2xl border border-[#ffe0c0] flex items-center gap-3 focus-within:border-[#ff9020] focus-within:ring-4 focus-within:ring-[#fff9f0] transition ${disabled ? 'opacity-60 bg-gray-100' : ''}">
-${prefix ? `<span class="text-2xl font-bold ${disabled ? 'text-gray-400' : 'text-[#ffd0a0]'}">${prefix}</span>` : ''}
-<input
-type="${type}"
-class="w-full outline-none text-base font-medium text-gray-800 placeholder:text-gray-300 bg-transparent"
-placeholder="${placeholder}"
-value="${value}"
-data-name="${name}"
-${inputMode ? `inputmode="${inputMode}"` : ''}
-oninput="handleInputChange(event, '${eventName}')"
-${disabled ? 'disabled' : ''}
-/>
-${icon || ''}
-</div>
-</div>
-`;
-}
+        function InputWithLabel({ label, placeholder, value, name, prefix = null, icon = null, disabled = false, type = 'text', eventName, inputMode = 'text' }) {
+            return `
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                        ${label}
+                    </label>
+                    <div class="bg-white p-4 rounded-2xl border border-[#ffe0c0] flex items-center gap-3 focus-within:border-[#ff9020] focus-within:ring-4 focus-within:ring-[#fff9f0] transition ${disabled ? 'opacity-60 bg-gray-100' : ''}">
+                        ${prefix ? `<span class="text-2xl font-bold ${disabled ? 'text-gray-400' : 'text-[#ffd0a0]'}">${prefix}</span>` : ''}
+                        <input 
+                            type="${type}" 
+                            class="w-full outline-none text-base font-medium text-gray-800 placeholder:text-gray-300 bg-transparent" 
+                            placeholder="${placeholder}"
+                            value="${value}"
+                            data-name="${name}"
+                            ${inputMode ? `inputmode="${inputMode}"` : ''}
+                            oninput="handleInputChange(event, '${eventName}')"
+                            ${disabled ? 'disabled' : ''}
+                        />
+                        ${icon || ''}
+                    </div>
+                </div>
+            `;
+        }
 
-// Input değişikliğini yakalama ve state güncelleme
-function handleInputChange(event, eventName) {
-const name = event.target.dataset.name;
-const value = event.target.value;
+        // Input değişikliğini yakalama ve state güncelleme
+        function handleInputChange(event, eventName) {
+            const name = event.target.dataset.name;
+            const value = event.target.value;
 
-const update = {};
-update[name] = value;
+            const update = {};
+            update[name] = value;
 
-setState(update);
-}
-
-
-// --- EKRANLARIN RENDER EDİLMESİ ---
-
-function renderHome() {
-const txList = state.transactions.map(tx => `
-<div class="flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50">
-<div class="p-3 bg-gray-50 rounded-full text-gray-600">
-${getIconHtml(tx.icon, 18, tx.color)}
-</div>
-<div class="flex-1">
-<p class="font-semibold text-gray-800">${tx.name}</p>
-<p class="text-sm text-gray-400">${tx.type === 'send' ? 'Para Gönderildi' : 'Harcama'}</p>
-</div>
-<div class="font-bold ${tx.amount < 0 ? 'text-gray-800' : 'text-green-500'}">
-${tx.amount.toFixed(2).replace('.', ',')} ₺
-</div>
-</div>
-`).join('');
-
-return`
-<div class="max-w-xl mx-auto animate-in fade-in flex flex-col flex-1">
-<!-- 1. TEMİZ HEADER -->
-<div class="bg-[#ff7f00] p-6 flex justify-between items-center shadow-md rounded-b-xl sticky top-0 z-10">
-<h1 class="text-xl font-bold text-white">TrendyolPay</h1>
-<button class="text-white opacity-80 hover:opacity-100" onclick="alert('Çıkış simülasyonu')">
-${getIconHtml('log-out', 20)}
-</button>
-</div>
-
-<!-- 2. ANA İÇERİK (KAYDIRILABİLİR) -->
-<div class="p-6 bg-gray-50 flex-1 overflow-y-auto">
- 
-<!-- Bakiye Bilgisi -->
-<div class="flex justify-between items-center mb-2">
-<span class="text-sm font-medium text-gray-500">Toplam Bakiye</span>
-<button class="text-gray-400 hover:text-gray-600 flex items-center gap-1 text-sm" onclick="setState({ balanceVisible: !state.balanceVisible })">
-${state.balanceVisible ? getIconHtml('eye-off', 14) : getIconHtml('eye', 14)}
-${state.balanceVisible ? 'Gizle' : 'Göster'}
-</button>
-</div>
- 
-<h2 class="text-4xl font-bold text-gray-800 mb-6">
-${state.balanceVisible ? "₺ 1.250,75" : "₺ ••••"}
-</h2>
-
-<!-- SİYAH-TURUNCU GEÇİŞLİ FİZİKSEL KART -->
-<div class="bg-gradient-to-br from-gray-900 to-[#ff7f00] p-6 rounded-2xl shadow-xl text-white relative overflow-hidden mb-8">
-<div class="absolute -top-10 -right-10 w-32 h-32 bg-[#ff7f00]/30 rounded-full filter blur-2xl opacity-70"></div>
- 
-<div class="flex justify-between items-start mb-10">
-<h3 class="text-2xl font-semibold">TrendyolPay</h3>
-${getIconHtml('credit-card', 28, 'opacity-50')}
-</div>
-<div class="font-mono text-xl tracking-widest mb-6">
-<span>••••</span><span class="ml-2">••••</span><span class="ml-2">••••</span><span class="ml-2">9012</span>
-</div>
-<div class="flex justify-between items-end">
-<div>
-<span class="block text-xs opacity-70">KART SAHİBİ</span>
-<span class="block text-md font-medium">Seda Kilisli</span>
-</div>
-<div>
-<span class="block text-xs opacity-70">SON K. T.</span>
-<span class="block text-md font-medium">12/28</span>
-</div>
-</div>
-</div>
-
-<!-- SON HAREKETLER (Beyaz Kart İçinde) -->
-<h2 class="text-lg font-bold text-gray-800 mb-4">Son Hareketler</h2>
-<div class="bg-white rounded-2xl border border-gray-100 shadow-sm">
-<div class="space-y-1 p-2">
-${txList}
-</div>
-</div>
-</div>
-</div>
-`;
-}
-
-function renderDeposit() {
-const ibanContent = `
-<div class="animate-in fade-in duration-300">
-<div class="p-6 bg-white">
-<p class="text-gray-600 text-sm mb-4">
-TrendyolPay hesabına para yüklemek için IBAN veya kolay adres bilgilerini kopyalayabilirsin.
-</p>
- 
-<div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm mb-4">
-<span class="text-xs text-gray-400 uppercase tracking-wider">Alıcı Adı</span>
-<p class="text-gray-800 font-bold text-lg mt-1">Seda Kilisli</p>
-</div>
-
-<div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-<span class="text-xs text-gray-400 uppercase tracking-wider">TrendyolPay IBAN</span>
-<div class="flex items-center justify-between gap-2 mt-2">
-<p class="text-gray-800 font-medium text-lg font-mono tracking-tighter">TR12 000...00 00</p>
-<button
-onclick="handleCopyIban()"
-class="flex items-center gap-2 p-2 px-3 ${state.copied ? 'bg-green-100 text-green-700' : 'bg-[#fff9f0] text-[#ff7f00]'} rounded-lg transition text-sm font-semibold"
->
-${state.copied ? getIconHtml('check-circle-2', 16) : getIconHtml('copy', 16)}
-${state.copied ? 'Kopyalandı' : 'Kopyala'}
-</button>
-</div>
-</div>
-</div>
- 
-<div class="p-6">
-<h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">KOLAY ADRESLERİN</h3>
-<div class="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-100">
-<div class="flex items-center justify-between p-4">
-<div>
-<span class="text-sm font-medium text-gray-800">Telefon Numarası</span>
-<p class="text-sm text-gray-500">0 (506) 123 45 67</p>
-</div>
-<button class="text-sm font-bold text-[#ff7f00]">Eşleştir</button>
-</div>
-<div class="flex items-center justify-between p-4">
-<div>
-<span class="text-sm font-medium text-gray-800">E-posta</span>
-<p class="text-sm text-gray-500">seda.kilisli@mail.com</p>
-</div>
-<button class="text-sm font-bold text-[#ff7f00]">Eşleştir</button>
-</div>
-<div class="flex items-center justify-between p-4">
-<div>
-<span class="text-sm font-medium text-gray-800">TC Kimlik Numarası</span>
-<p class="text-sm text-gray-500">4921...88</p>
-</div>
-<button class="text-sm font-bold text-[#ff7f00]">Eşleştir</button>
-</div>
-</div>
-</div>
-
-<div class="p-6 pt-0 space-y-4">
- 
-<div class="text-center p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
-<span class="text-xs text-gray-400 uppercase tracking-wider">Kalan Aylık İşlem Limiti</span>
-<p class="text-2xl font-bold text-gray-800 mt-1">600.000 TL</p>
-</div>
-
-<div class="flex items-start gap-3 p-4 bg-blue-50 text-blue-800 rounded-2xl border border-blue-100">
-${getIconHtml('info', 18, 'flex-shrink-0 mt-0.5')}
-<p class="text-xs">
-IBAN ile eşleştirdiğin kolay adres bilgilerin Aydınlatma Metni kapsamında TCMB ve BKM ile paylaşılacaktır.
-</p>
-</div>
-
-<button class="w-full text-center font-semibold text-[#ff7f00] p-3">
-Nasıl para yüklerim?
-</button>
-</div>
-</div>
-`;
-
-const cardContent = `
-<div class="space-y-6 p-6 animate-in fade-in duration-300 bg-white h-full">
-<div>
-<label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-Kayıtlı Kart
-</label>
-<div class="bg-white p-4 rounded-2xl border border-[#ffe0c0] flex items-center justify-between">
-<div class="flex items-center gap-3">
-${getIconHtml('credit-card', 24, 'text-[#ff7f00]')}
-<span class="font-medium text-gray-800">•••• 1234</span>
-</div>
-<button class="text-xs font-bold text-[#ff7f00]">DEĞİŞTİR</button>
-</div>
-</div>
- 
-${InputWithLabel({ label: 'Tutar', placeholder: '0', value: '', name: 'depositAmount', prefix: '₺', type: 'text', inputMode: 'numeric' })}
-
-<button class="w-full bg-[#ff7f00] text-white font-bold p-5 rounded-2xl text-lg shadow-[0_8px_20px_-5px_#ff7f00] hover:bg-[#fa8e20] transition-transform active:scale-[0.98]" onclick="alert('Kart ile yükleme simülasyonu')">
-Para Yükle
-</button>
-</div>
-`;
-
-return`
-<div class="max-w-xl mx-auto animate-in fade-in slide-in-from-right-8 duration-300 flex flex-col h-full bg-gray-50">
-<!-- Başlık -->
-<div class="p-6 flex items-center gap-4 bg-white border-b border-gray-100">
-<button
-onclick="setState({ activeScreen: 'home' }); resetFlows();"
-class="p-2 bg-gray-100 rounded-full text-gray-600 hover:bg-gray-200"
->
-${getIconHtml('arrow-left', 20)}
-</button>
-<h1 class="text-xl font-bold text-gray-800">Para Yükle</h1>
-</div>
-
-<!-- Yöntem Seçimi -->
-<div class="p-6 pb-0 bg-white">
-<div class="flex gap-2 bg-gray-100 p-2 rounded-2xl">
-<button
-onclick="setState({ depositMethod: 'card' })"
-class="flex-1 p-3 rounded-xl font-semibold transition-all ${state.depositMethod === 'card' ? 'bg-white shadow' : 'text-gray-500'}"
->
-Kart ile
-</button>
-<button
-onclick="setState({ depositMethod: 'iban' })"
-class="flex-1 p-3 rounded-xl font-semibold transition-all ${state.depositMethod === 'iban' ? 'bg-white shadow' : 'text-gray-500'}"
->
-IBAN ile
-</button>
-</div>
-</div>
-
-<!-- İçerik - Seçime göre değişir -->
-<div class="flex-1 overflow-y-auto">
-${state.depositMethod === 'card' ? cardContent : ibanContent}
-</div>
-</div>
-`;
-}
-
-function renderSend() {
-// IBAN doğrulama simülasyonu için maskeli isim
-const isIbanEntered = state.sendMethodTab === 'iban' && state.recipientIBAN.length > 5;
-// Kolay Adres doğrulama simülasyonu için flag (Giriş tamamlandı varsayımı: 10 karakter)
-const isPhoneCompleted = state.sendMethodTab === 'phone' && state.recipientPhone.length >= 10;
-const isOtherCompleted = state.sendMethodTab === 'other' && state.recipientOther.length >= 10;
-
-const maskedName = "S*** K*****";
-const verifiedBank = "Trendyol Bank A.Ş.";
-const maskedIban = "TRXX XXXX XXXX XXXX XXXX XXXX";
+            setState(update);
+        }
 
 
-const formContent = `
-<!-- Form Alanları (Metod'a göre değişir) -->
-<div class="animate-in fade-in duration-300">
- 
-<!-- 1. IBAN FORMU -->
-${state.sendMethodTab === 'iban' ? `
-<div class="space-y-4">
-${InputWithLabel({ label: 'Alıcı IBAN', placeholder: 'TR...', value: state.recipientIBAN, name: 'recipientIBAN' })}
- 
-${isIbanEntered ? `
-<div class="bg-gray-100 p-4 rounded-2xl border border-gray-200 animate-in fade-in duration-200">
-<label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
-Alıcı Adı Soyadı (Teyit)
-</label>
-<p class="font-semibold text-gray-800 text-base">${maskedName}</p>
-<p class="text-xs text-gray-500 mt-1">${verifiedBank}</p>
-</div>
-` : ''}
+        // --- EKRANLARIN RENDER EDİLMESİ ---
 
-${InputWithLabel({ label: 'Alıcı Adı Soyadı', placeholder: 'Tam İsim Soyisim', value: state.recipientName, name: 'recipientName' })}
-</div>
-` : ''}
- 
-<!-- 2. TELEFON NO FORMU -->
-${state.sendMethodTab === 'phone' ? `
-<div class="space-y-4">
-${InputWithLabel({
-label: 'Telefon Numarası',
-placeholder: '0 (5xx) ...',
-value: state.recipientPhone,
-name: 'recipientPhone',
-icon: `<button onclick="alert('Rehber açılma simülasyonu')" class="p-2 text-[#ff7f00] hover:bg-[#fff9f0] rounded-lg transition" title="Rehberden Seç">${getIconHtml('users', 20)}</button>`
-})}
+        function renderHome() {
+            const txList = state.transactions.map(tx => `
+                <div class="flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50">
+                    <div class="p-3 bg-gray-50 rounded-full text-gray-600">
+                        ${getIconHtml(tx.icon, 18, tx.color)}
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-semibold text-gray-800">${tx.name}</p>
+                        <p class="text-sm text-gray-400">${tx.type === 'send' ? 'Para Gönderildi' : 'Harcama'}</p>
+                    </div>
+                    <div class="font-bold ${tx.amount < 0 ? 'text-gray-800' : 'text-green-500'}">
+                        ${tx.amount.toFixed(2).replace('.', ',')} ₺
+                    </div>
+                </div>
+            `).join('');
 
-${isPhoneCompleted ? `
-<div class="bg-gray-100 p-4 rounded-2xl border border-gray-200 animate-in fade-in duration-200">
-<label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
-Alıcı Bilgileri (Doğrulandı)
-</label>
-<p class="font-semibold text-gray-800 text-base">${maskedName}</p>
-<p class="text-xs text-gray-500 mt-1 font-mono tracking-tighter">${maskedIban}</p>
-</div>
-` : ''}
-</div>
-` : ''}
- 
-<!-- 3. DİĞER FORMU (TCKN/E-POSTA) -->
-${state.sendMethodTab === 'other' ? `
-<div class="space-y-4">
-<div class="flex gap-2">
-<button
-onclick="setState({ otherMethodType: 'tckn', recipientOther: '' })"
-class="flex-1 p-3 text-sm rounded-xl font-semibold ${state.otherMethodType === 'tckn' ? 'bg-white shadow border border-gray-100' : 'bg-gray-100 text-gray-500'}"
->
-TCKN
-</button>
-<button
-onclick="setState({ otherMethodType: 'email', recipientOther: '' })"
-class="flex-1 p-3 text-sm rounded-xl font-semibold ${state.otherMethodType === 'email' ? 'bg-white shadow border border-gray-100' : 'bg-gray-100 text-gray-500'}"
->
-E-posta
-</button>
-</div>
-${InputWithLabel({
-label: state.otherMethodType === 'tckn' ? 'T.C. Kimlik Numarası' : 'E-posta Adresi',
-placeholder: state.otherMethodType === 'tckn' ? '11...11' : 'mail@adres.com',
-value: state.recipientOther,
-name: 'recipientOther'
-})}
+            return `
+                <div class="max-w-xl mx-auto animate-in fade-in flex flex-col flex-1">
+                    <!-- 1. TEMİZ HEADER -->
+                    <div class="bg-[#ff7f00] p-6 flex justify-between items-center shadow-md rounded-b-xl sticky top-0 z-10">
+                        <h1 class="text-xl font-bold text-white">TrendyolPay</h1>
+                        <button class="text-white opacity-80 hover:opacity-100" onclick="alert('Çıkış simülasyonu')">
+                            ${getIconHtml('log-out', 20)}
+                        </button>
+                    </div>
 
-${isOtherCompleted ? `
-<div class="bg-gray-100 p-4 rounded-2xl border border-gray-200 animate-in fade-in duration-200">
-<label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
-Alıcı Bilgileri (Doğrulandı)
-</label>
-<p class="font-semibold text-gray-800 text-base">${maskedName}</p>
-<p class="text-xs text-gray-500 mt-1 font-mono tracking-tighter">${maskedIban}</p>
-</div>
-` : ''}
-</div>
-` : ''}
-</div>
-`;
+                    <!-- 2. ANA İÇERİK (KAYDIRILABİLİR) -->
+                    <div class="p-6 bg-gray-50 flex-1 overflow-y-auto">
+                        
+                        <!-- Bakiye Bilgisi -->
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-500">Toplam Bakiye</span>
+                            <button class="text-gray-400 hover:text-gray-600 flex items-center gap-1 text-sm" onclick="setState({ balanceVisible: !state.balanceVisible })">
+                                ${state.balanceVisible ? getIconHtml('eye-off', 14) : getIconHtml('eye', 14)}
+                                ${state.balanceVisible ? 'Gizle' : 'Göster'}
+                            </button>
+                        </div>
+                        
+                        <h2 class="text-4xl font-bold text-gray-800 mb-6">
+                            ${state.balanceVisible ? "₺ 1.250,75" : "₺ ••••"}
+                        </h2>
 
-const formScreen = `
-<div class="max-w-xl mx-auto flex flex-col h-full bg-gray-50">
-<!-- Başlık -->
-<div class="p-6 flex items-center gap-4 bg-white border-b border-gray-100">
-<button
-onclick="setState({ activeScreen: 'home' }); resetFlows();"
-class="p-2 bg-gray-100 rounded-full text-gray-600 hover:bg-gray-200"
->
-${getIconHtml('arrow-left', 20)}
-</button>
-<h1 class="text-xl font-bold text-gray-800">Para Gönder</h1>
-</div>
+                        <!-- SİYAH-TURUNCU GEÇİŞLİ FİZİKSEL KART -->
+                        <div class="bg-gradient-to-br from-gray-900 to-[#ff7f00] p-6 rounded-2xl shadow-xl text-white relative overflow-hidden mb-8">
+                            <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#ff7f00]/30 rounded-full filter blur-2xl opacity-70"></div>
+                            
+                            <div class="flex justify-between items-start mb-10">
+                                <h3 class="text-2xl font-semibold">TrendyolPay</h3>
+                                ${getIconHtml('credit-card', 28, 'opacity-50')}
+                            </div>
+                            <div class="font-mono text-xl tracking-widest mb-6">
+                                <span>••••</span><span class="ml-2">••••</span><span class="ml-2">••••</span><span class="ml-2">9012</span>
+                            </div>
+                            <div class="flex justify-between items-end">
+                                <div>
+                                    <span class="block text-xs opacity-70">KART SAHİBİ</span>
+                                    <span class="block text-md font-medium">Seda Kilisli</span>
+                                </div>
+                                <div>
+                                    <span class="block text-xs opacity-70">SON K. T.</span>
+                                    <span class="block text-md font-medium">12/28</span>
+                                </div>
+                            </div>
+                        </div>
 
-<!-- YENİ: Ana Sekmeler (Yeni/Kayıtlı) -->
-<div class="p-6 pb-0 bg-white">
-<div class="flex gap-2 bg-gray-100 p-2 rounded-2xl">
-<button
-onclick="setState({ sendRecipientTab: 'new' })"
-class="flex-1 p-3 rounded-xl font-semibold transition-all ${state.sendRecipientTab === 'new' ? 'bg-white shadow' : 'text-gray-500'}"
->
-Yeni Alıcı
-</button>
-<button
-onclick="setState({ sendRecipientTab: 'saved' })"
-class="flex-1 p-3 rounded-xl font-semibold transition-all ${state.sendRecipientTab === 'saved' ? 'bg-white shadow' : 'text-gray-500'}"
->
-Kayıtlı Alıcı
-</button>
-</div>
-</div>
- 
-<!-- Form Alanı (Kaydırılabilir) -->
-<div class="flex-1 overflow-y-auto p-6 space-y-6">
+                        <!-- SON HAREKETLER (Beyaz Kart İçinde) -->
+                        <h2 class="text-lg font-bold text-gray-800 mb-4">Son Hareketler</h2>
+                        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm">
+                            <div class="space-y-1 p-2">
+                                ${txList}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
-<!-- === "YENİ ALICI" FORMU === -->
-${state.sendRecipientTab === 'new' ? `
-<div class="space-y-6">
-<!-- Bakiye Bilgisi -->
-<div class="text-sm text-gray-500">
-Gönderilebilir bakiye: <span class="font-bold text-gray-700">1.250,75 TL</span>
-</div>
- 
-<p class="text-gray-600 text-sm">
-Göndermek istediğin hesaba ait IBAN, Telefon No veya diğer Kolay Adres bilgilerini girebilirsin.
-</p>
+        function renderDeposit() {
+            const ibanContent = `
+                <div class="animate-in fade-in duration-300">
+                    <div class="p-6 bg-white">
+                        <p class="text-gray-600 text-sm mb-4">
+                            TrendyolPay hesabına para yüklemek için IBAN veya kolay adres bilgilerini kopyalayabilirsin.
+                        </p>
+                        
+                        <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm mb-4">
+                            <span class="text-xs text-gray-400 uppercase tracking-wider">Alıcı Adı</span>
+                            <p class="text-gray-800 font-bold text-lg mt-1">Seda Kilisli</p>
+                        </div>
 
-<!-- YENİ: Metod Sekmeleri (IBAN/Tel/Diğer) -->
-<div class="flex gap-2 bg-gray-100 p-1 rounded-full">
-<button
-onclick="setState({ sendMethodTab: 'iban' })"
-class="flex-1 py-2 px-3 text-center rounded-full text-sm font-semibold transition-all ${state.sendMethodTab === 'iban' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}"
->
-IBAN
-</button>
-<button
-onclick="setState({ sendMethodTab: 'phone' })"
-class="flex-1 py-2 px-3 text-center rounded-full text-sm font-semibold transition-all ${state.sendMethodTab === 'phone' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}"
->
-Telefon No
-</button>
-<button
-onclick="setState({ sendMethodTab: 'other' })"
-class="flex-1 py-2 px-3 text-center rounded-full text-sm font-semibold transition-all ${state.sendMethodTab === 'other' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}"
->
-Diğer
-</button>
-</div>
+                        <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+                            <span class="text-xs text-gray-400 uppercase tracking-wider">TrendyolPay IBAN</span>
+                            <div class="flex items-center justify-between gap-2 mt-2">
+                                <p class="text-gray-800 font-medium text-lg font-mono tracking-tighter">TR12 000...00 00</p>
+                                <button 
+                                    onclick="handleCopyIban()"
+                                    class="flex items-center gap-2 p-2 px-3 ${state.copied ? 'bg-green-100 text-green-700' : 'bg-[#fff9f0] text-[#ff7f00]'} rounded-lg transition text-sm font-semibold"
+                                >
+                                    ${state.copied ? getIconHtml('check-circle-2', 16) : getIconHtml('copy', 16)}
+                                    ${state.copied ? 'Kopyalandı' : 'Kopyala'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">KOLAY ADRESLERİN</h3>
+                        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-100">
+                            <div class="flex items-center justify-between p-4">
+                                <div>
+                                    <span class="text-sm font-medium text-gray-800">Telefon Numarası</span>
+                                    <p class="text-sm text-gray-500">0 (506) 123 45 67</p>
+                                </div>
+                                <button class="text-sm font-bold text-[#ff7f00]">Eşleştir</button>
+                            </div>
+                            <div class="flex items-center justify-between p-4">
+                                <div>
+                                    <span class="text-sm font-medium text-gray-800">E-posta</span>
+                                    <p class="text-sm text-gray-500">seda.kilisli@mail.com</p>
+                                </div>
+                                <button class="text-sm font-bold text-[#ff7f00]">Eşleştir</button>
+                            </div>
+                            <div class="flex items-center justify-between p-4">
+                                <div>
+                                    <span class="text-sm font-medium text-gray-800">TC Kimlik Numarası</span>
+                                    <p class="text-sm text-gray-500">4921...88</p>
+                                </div>
+                                <button class="text-sm font-bold text-[#ff7f00]">Eşleştir</button>
+                            </div>
+                        </div>
+                    </div>
 
-${formContent}
- 
-<!-- Tutar Alanı -->
-${InputWithLabel({ label: 'Tutar', placeholder: '0', value: state.sendAmount, name: 'sendAmount', type: 'text', prefix: '₺', inputMode: 'numeric' })}
+                    <div class="p-6 pt-0 space-y-4">
+                        
+                        <div class="text-center p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                            <span class="text-xs text-gray-400 uppercase tracking-wider">Kalan Aylık İşlem Limiti</span>
+                            <p class="text-2xl font-bold text-gray-800 mt-1">600.000 TL</p>
+                        </div>
 
-<!-- Alıcıyı Kaydet Toggle -->
-<button onclick="setState({ saveRecipient: !state.saveRecipient })" class="flex items-center gap-3 w-full">
-<div class="w-10 h-6 ${state.saveRecipient ? 'bg-[#ff7f00]' : 'bg-gray-200'} rounded-full p-0.5 flex items-center transition-all">
-<div class="w-5 h-5 bg-white rounded-full transition-transform ${state.saveRecipient ? 'translate-x-4' : 'translate-x-0'}"></div>
-</div>
-<span class="text-sm font-medium text-gray-700">Alıcıyı kaydet</span>
-</button>
-</div>
-` : ''}
- 
-<!-- === "KAYITLI ALICI" EKRANI (Simülasyon) === -->
-${state.sendRecipientTab === 'saved' ? `
-<div class="flex flex-col items-center text-center p-8 bg-white rounded-2xl border border-gray-100 shadow-sm">
-${getIconHtml('book-user', 48, 'text-gray-300 mb-4')}
-<h3 class="font-bold text-gray-700">Kayıtlı Alıcı Bulunamadı</h3>
-<p class="text-sm text-gray-500">
-"Yeni Alıcı" sekmesinden yaptığınız transferlerde "Alıcıyı kaydet" seçeneğini işaretleyerek alıcılarınızı buraya ekleyebilirsiniz.
-</p>
-</div>
-` : ''}
+                        <div class="flex items-start gap-3 p-4 bg-blue-50 text-blue-800 rounded-2xl border border-blue-100">
+                            ${getIconHtml('info', 18, 'flex-shrink-0 mt-0.5')}
+                            <p class="text-xs">
+                                IBAN ile eşleştirdiğin kolay adres bilgilerin Aydınlatma Metni kapsamında TCMB ve BKM ile paylaşılacaktır.
+                            </p>
+                        </div>
 
-</div>
- 
-<!-- Alt Kısım: Buton ve FAST Logosu -->
-<div class="p-6 bg-white border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.02)] space-y-4">
-<button
-onclick="handleSendSubmit()"
-class="w-full bg-[#ff7f00] text-white font-bold p-5 rounded-2xl text-lg shadow-[0_8px_20px_-5px_#ff7f00] hover:bg-[#fa8e20] transition-transform active:scale-[0.98]"
->
-Devam Et
-</button>
+                        <button class="w-full text-center font-semibold text-[#ff7f00] p-3">
+                            Nasıl para yüklerim?
+                        </button>
+                    </div>
+                </div>
+            `;
 
-<!-- FAST İbaresi (Görseldeki gibi butonun altında) -->
-<div class="flex flex-col items-center justify-center gap-2">
-<span
-class="text-2xl font-bold text-[#ff7f00]"
-style="font-family: sans-serif; font-style: italic;"
->
-fast
-</span>
-<div class="flex items-center gap-2">
-${getIconHtml('building-2', 24, 'text-gray-600')}
-<span class="font-semibold text-gray-600 text-[10px] leading-tight">
-TÜRKİYE CUMHURİYET<br/>MERKEZ BANKASI
-</span>
-</div>
-</div>
-</div>
-</div>
-`;
- 
-// Diğer durumlar (loading, success, error) için HTML yapıları
-const loadingScreen = `
-<div class="h-full flex flex-col items-center justify-center text-center p-12 gap-4">
-${getIconHtml('loader-2', 64, 'text-[#ff7f00] animate-spin')}
-<h2 class="text-2xl font-bold text-gray-800">Transfer İşleniyor</h2>
-<p class="text-gray-500">Lütfen bekleyin...</p>
-</div>
-`;
- 
-const successScreen = `
-<div class="h-full flex flex-col items-center justify-center text-center p-12 gap-4 animate-in fade-in zoom-in-95 duration-300">
-${getIconHtml('check-circle-2', 64, 'text-green-500')}
-<h2 class="text-2xl font-bold text-gray-800">Transfer Başarılı</h2>
-<p class="text-gray-500">
-Alıcıya <span class="font-bold text-gray-700">₺${parseFloat(state.sendAmount).toFixed(2).replace('.',',')}</span> gönderildi.
-</p>
-<button
-onclick="setState({ activeScreen: 'home' }); resetFlows();"
-class="mt-4 w-full bg-[#ff7f00] text-white font-bold p-5 rounded-2xl text-lg shadow-[0_8px_20px_-5px_#ff7f00] hover:bg-[#fa8e20] transition-transform active:scale-[0.98]"
->
-Ana Sayfa'ya Dön
-</button>
-</div>
-`;
- 
-const errorScreen = `
-<div class="h-full flex flex-col items-center justify-center text-center p-12 gap-4 animate-in fade-in zoom-in-95 duration-300">
-${getIconHtml('x-circle', 64, 'text-red-500')}
-<h2 class="text-2xl font-bold text-gray-800">Transfer Başarısız</h2>
-<p class="text-gray-500">
-Lütfen girdiğiniz bilgileri kontrol edin (Tutar 0'dan büyük olmalı) ve tekrar deneyin.
-</p>
-<button
-onclick="setState({ sendFlowState: 'form' })"
-class="mt-4 w-full bg-gray-600 text-white font-bold p-5 rounded-2xl text-lg hover:bg-gray-700 transition-transform active:scale-[0.98]"
->
-Geri Dön ve Düzelt
-</button>
-</div>
-`;
+            const cardContent = `
+                <div class="space-y-6 p-6 animate-in fade-in duration-300 bg-white h-full">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                            Kayıtlı Kart
+                        </label>
+                        <div class="bg-white p-4 rounded-2xl border border-[#ffe0c0] flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                ${getIconHtml('credit-card', 24, 'text-[#ff7f00]')}
+                                <span class="font-medium text-gray-800">•••• 1234</span>
+                            </div>
+                            <button class="text-xs font-bold text-[#ff7f00]">DEĞİŞTİR</button>
+                        </div>
+                    </div>
+                    
+                    ${InputWithLabel({ label: 'Tutar', placeholder: '0', value: '', name: 'depositAmount', prefix: '₺', type: 'text', inputMode: 'numeric' })}
 
-switch (state.sendFlowState) {
-case'loading': return loadingScreen;
-case'success': return successScreen;
-case'error': return errorScreen;
-case'form': default: return formScreen;
-}
-}
+                    <button class="w-full bg-[#ff7f00] text-white font-bold p-5 rounded-2xl text-lg shadow-[0_8px_20px_-5px_#ff7f00] hover:bg-[#fa8e20] transition-transform active:scale-[0.98]" onclick="alert('Kart ile yükleme simülasyonu')">
+                        Para Yükle
+                    </button>
+                </div>
+            `;
 
-function renderBottomNav() {
-const tabs = [
-{ icon: 'home', label: 'Ana Sayfa', screen: 'home' },
-{ icon: 'plus', label: 'Para Yükle', screen: 'deposit' },
-{ icon: 'send', label: 'Para Gönder', screen: 'send' }
-];
+            return `
+                <div class="max-w-xl mx-auto animate-in fade-in slide-in-from-right-8 duration-300 flex flex-col h-full bg-gray-50">
+                    <!-- Başlık -->
+                    <div class="p-6 flex items-center gap-4 bg-white border-b border-gray-100">
+                        <button 
+                            onclick="setState({ activeScreen: 'home' }); resetFlows();" 
+                            class="p-2 bg-gray-100 rounded-full text-gray-600 hover:bg-gray-200"
+                        >
+                            ${getIconHtml('arrow-left', 20)}
+                        </button>
+                        <h1 class="text-xl font-bold text-gray-800">Para Yükle</h1>
+                    </div>
 
-const navItems = tabs.map(tab => `
-<button
-onclick="setState({ activeScreen: '${tab.screen}' }); resetFlows();"
-class="flex flex-col items-center gap-1 ${state.activeScreen === tab.screen ? 'text-[#ff7f00]' : 'text-gray-400'} transition-all"
->
-${getIconHtml(tab.icon, 22)}
-<span class="text-xs font-bold">${tab.label}</span>
-</button>
-`).join('');
+                    <!-- Yöntem Seçimi -->
+                    <div class="p-6 pb-0 bg-white">
+                        <div class="flex gap-2 bg-gray-100 p-2 rounded-2xl">
+                            <button 
+                                onclick="setState({ depositMethod: 'card' })"
+                                class="flex-1 p-3 rounded-xl font-semibold transition-all ${state.depositMethod === 'card' ? 'bg-white shadow' : 'text-gray-500'}"
+                            >
+                                Kart ile
+                            </button>
+                            <button 
+                                onclick="setState({ depositMethod: 'iban' })"
+                                class="flex-1 p-3 rounded-xl font-semibold transition-all ${state.depositMethod === 'iban' ? 'bg-white shadow' : 'text-gray-500'}"
+                            >
+                                IBAN ile
+                            </button>
+                        </div>
+                    </div>
 
-return`
-<nav class="fixed bottom-0 left-0 right-0 max-w-[420px] mx-auto bg-white border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.02)] p-4 flex justify-around items-center rounded-t-2xl safe-area-bottom">
-${navItems}
-</nav>
-`;
-}
+                    <!-- İçerik - Seçime göre değişir -->
+                    <div class="flex-1 overflow-y-auto">
+                        ${state.depositMethod === 'card' ? cardContent : ibanContent}
+                    </div>
+                </div>
+            `;
+        }
 
-// --- ANA RENDER FONKSİYONU ---
+        function renderSend() {
+            // IBAN doğrulama simülasyonu için maskeli isim
+            const isIbanEntered = state.sendMethodTab === 'iban' && state.recipientIBAN.length > 5;
+            // Kolay Adres doğrulama simülasyonu için flag (Giriş tamamlandı varsayımı: 10 karakter)
+            const isPhoneCompleted = state.sendMethodTab === 'phone' && state.recipientPhone.length >= 10;
+            const isOtherCompleted = state.sendMethodTab === 'other' && state.recipientOther.length >= 10;
 
-function render() {
-let content;
-switch (state.activeScreen) {
-case'deposit': content = renderDeposit(); break;
-case'send': content = renderSend(); break;
-case'home': default: content = renderHome(); break;
-}
+            const maskedName = "S*** K*****";
+            const verifiedBank = "Trendyol Bank A.Ş.";
+            const maskedIban = "TRXX XXXX XXXX XXXX XXXX XXXX";
 
-const appMarkup = `
-<main class="flex-1 overflow-y-auto">
-${content}
-</main>
-${renderBottomNav()}
-`;
- 
-APP_CONTAINER.innerHTML = appMarkup;
-// İkonların düzgün çizildiğinden emin olmak için ekleme
-if (window.lucide) {
-window.lucide.createIcons();
-}
-}
 
-// Uygulamayı başlat
-render();
-</script>
+            const formContent = `
+                <!-- Form Alanları (Metod'a göre değişir) -->
+                <div class="animate-in fade-in duration-300">
+                    
+                    <!-- 1. IBAN FORMU -->
+                    ${state.sendMethodTab === 'iban' ? `
+                    <div class="space-y-4">
+                        ${InputWithLabel({ label: 'Alıcı IBAN', placeholder: 'TR...', value: state.recipientIBAN, name: 'recipientIBAN' })}
+                        
+                        ${isIbanEntered ? `
+                            <div class="bg-gray-100 p-4 rounded-2xl border border-gray-200 animate-in fade-in duration-200">
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
+                                    Alıcı Adı Soyadı (Teyit)
+                                </label>
+                                <p class="font-semibold text-gray-800 text-base">${maskedName}</p>
+                                <p class="text-xs text-gray-500 mt-1">${verifiedBank}</p>
+                            </div>
+                        ` : ''}
+
+                        ${InputWithLabel({ label: 'Alıcı Adı Soyadı', placeholder: 'Tam İsim Soyisim', value: state.recipientName, name: 'recipientName' })}
+                    </div>
+                    ` : ''}
+                    
+                    <!-- 2. TELEFON NO FORMU -->
+                    ${state.sendMethodTab === 'phone' ? `
+                    <div class="space-y-4">
+                        ${InputWithLabel({ 
+                            label: 'Telefon Numarası', 
+                            placeholder: '0 (5xx) ...', 
+                            value: state.recipientPhone, 
+                            name: 'recipientPhone',
+                            icon: `<button onclick="alert('Rehber açılma simülasyonu')" class="p-2 text-[#ff7f00] hover:bg-[#fff9f0] rounded-lg transition" title="Rehberden Seç">${getIconHtml('users', 20)}</button>`
+                        })}
+
+                        ${isPhoneCompleted ? `
+                            <div class="bg-gray-100 p-4 rounded-2xl border border-gray-200 animate-in fade-in duration-200">
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
+                                    Alıcı Bilgileri (Doğrulandı)
+                                </label>
+                                <p class="font-semibold text-gray-800 text-base">${maskedName}</p>
+                                <p class="text-xs text-gray-500 mt-1 font-mono tracking-tighter">${maskedIban}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                    
+                    <!-- 3. DİĞER FORMU (TCKN/E-POSTA) -->
+                    ${state.sendMethodTab === 'other' ? `
+                    <div class="space-y-4">
+                        <div class="flex gap-2">
+                            <button 
+                                onclick="setState({ otherMethodType: 'tckn', recipientOther: '' })"
+                                class="flex-1 p-3 text-sm rounded-xl font-semibold ${state.otherMethodType === 'tckn' ? 'bg-white shadow border border-gray-100' : 'bg-gray-100 text-gray-500'}"
+                            >
+                                TCKN
+                            </button>
+                            <button 
+                                onclick="setState({ otherMethodType: 'email', recipientOther: '' })"
+                                class="flex-1 p-3 text-sm rounded-xl font-semibold ${state.otherMethodType === 'email' ? 'bg-white shadow border border-gray-100' : 'bg-gray-100 text-gray-500'}"
+                            >
+                                E-posta
+                            </button>
+                        </div>
+                        ${InputWithLabel({ 
+                            label: state.otherMethodType === 'tckn' ? 'T.C. Kimlik Numarası' : 'E-posta Adresi',
+                            placeholder: state.otherMethodType === 'tckn' ? '11...11' : 'mail@adres.com',
+                            value: state.recipientOther,
+                            name: 'recipientOther'
+                        })}
+
+                        ${isOtherCompleted ? `
+                            <div class="bg-gray-100 p-4 rounded-2xl border border-gray-200 animate-in fade-in duration-200">
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
+                                    Alıcı Bilgileri (Doğrulandı)
+                                </label>
+                                <p class="font-semibold text-gray-800 text-base">${maskedName}</p>
+                                <p class="text-xs text-gray-500 mt-1 font-mono tracking-tighter">${maskedIban}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+
+            const formScreen = `
+                <div class="max-w-xl mx-auto flex flex-col h-full bg-gray-50">
+                    <!-- Başlık -->
+                    <div class="p-6 flex items-center gap-4 bg-white border-b border-gray-100">
+                        <button 
+                            onclick="setState({ activeScreen: 'home' }); resetFlows();" 
+                            class="p-2 bg-gray-100 rounded-full text-gray-600 hover:bg-gray-200"
+                        >
+                            ${getIconHtml('arrow-left', 20)}
+                        </button>
+                        <h1 class="text-xl font-bold text-gray-800">Para Gönder</h1>
+                    </div>
+
+                    <!-- YENİ: Ana Sekmeler (Yeni/Kayıtlı) -->
+                    <div class="p-6 pb-0 bg-white">
+                        <div class="flex gap-2 bg-gray-100 p-2 rounded-2xl">
+                            <button 
+                                onclick="setState({ sendRecipientTab: 'new' })"
+                                class="flex-1 p-3 rounded-xl font-semibold transition-all ${state.sendRecipientTab === 'new' ? 'bg-white shadow' : 'text-gray-500'}"
+                            >
+                                Yeni Alıcı
+                            </button>
+                            <button 
+                                onclick="setState({ sendRecipientTab: 'saved' })"
+                                class="flex-1 p-3 rounded-xl font-semibold transition-all ${state.sendRecipientTab === 'saved' ? 'bg-white shadow' : 'text-gray-500'}"
+                            >
+                                Kayıtlı Alıcı
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Alanı (Kaydırılabilir) -->
+                    <div class="flex-1 overflow-y-auto p-6 space-y-6">
+
+                        <!-- === "YENİ ALICI" FORMU === -->
+                        ${state.sendRecipientTab === 'new' ? `
+                        <div class="space-y-6">
+                            <!-- Bakiye Bilgisi -->
+                            <div class="text-sm text-gray-500">
+                                Gönderilebilir bakiye: <span class="font-bold text-gray-700">1.250,75 TL</span>
+                            </div>
+                            
+                            <p class="text-gray-600 text-sm">
+                                Göndermek istediğin hesaba ait IBAN, Telefon No veya diğer Kolay Adres bilgilerini girebilirsin.
+                            </p>
+
+                            <!-- YENİ: Metod Sekmeleri (IBAN/Tel/Diğer) -->
+                            <div class="flex gap-2 bg-gray-100 p-1 rounded-full">
+                                <button 
+                                    onclick="setState({ sendMethodTab: 'iban' })"
+                                    class="flex-1 py-2 px-3 text-center rounded-full text-sm font-semibold transition-all ${state.sendMethodTab === 'iban' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}"
+                                >
+                                    IBAN
+                                </button>
+                                <button 
+                                    onclick="setState({ sendMethodTab: 'phone' })"
+                                    class="flex-1 py-2 px-3 text-center rounded-full text-sm font-semibold transition-all ${state.sendMethodTab === 'phone' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}"
+                                >
+                                    Telefon No
+                                </button>
+                                <button 
+                                    onclick="setState({ sendMethodTab: 'other' })"
+                                    class="flex-1 py-2 px-3 text-center rounded-full text-sm font-semibold transition-all ${state.sendMethodTab === 'other' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}"
+                                >
+                                    Diğer
+                                </button>
+                            </div>
+
+                            ${formContent}
+                            
+                            <!-- Tutar Alanı -->
+                            ${InputWithLabel({ label: 'Tutar', placeholder: '0', value: state.sendAmount, name: 'sendAmount', type: 'text', prefix: '₺', inputMode: 'numeric' })}
+
+                            <!-- Alıcıyı Kaydet Toggle -->
+                            <button onclick="setState({ saveRecipient: !state.saveRecipient })" class="flex items-center gap-3 w-full">
+                                <div class="w-10 h-6 ${state.saveRecipient ? 'bg-[#ff7f00]' : 'bg-gray-200'} rounded-full p-0.5 flex items-center transition-all">
+                                    <div class="w-5 h-5 bg-white rounded-full transition-transform ${state.saveRecipient ? 'translate-x-4' : 'translate-x-0'}"></div>
+                                </div>
+                                <span class="text-sm font-medium text-gray-700">Alıcıyı kaydet</span>
+                            </button>
+                        </div>
+                        ` : ''}
+                        
+                        <!-- === "KAYITLI ALICI" EKRANI (Simülasyon) === -->
+                        ${state.sendRecipientTab === 'saved' ? `
+                        <div class="flex flex-col items-center text-center p-8 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                            ${getIconHtml('book-user', 48, 'text-gray-300 mb-4')}
+                            <h3 class="font-bold text-gray-700">Kayıtlı Alıcı Bulunamadı</h3>
+                            <p class="text-sm text-gray-500">
+                                "Yeni Alıcı" sekmesinden yaptığınız transferlerde "Alıcıyı kaydet" seçeneğini işaretleyerek alıcılarınızı buraya ekleyebilirsiniz.
+                            </p>
+                        </div>
+                        ` : ''}
+
+                    </div>
+                    
+                    <!-- Alt Kısım: Buton ve FAST Logosu -->
+                    <div class="p-6 bg-white border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.02)] space-y-4">
+                        <button 
+                            onclick="handleSendSubmit()"
+                            class="w-full bg-[#ff7f00] text-white font-bold p-5 rounded-2xl text-lg shadow-[0_8px_20px_-5px_#ff7f00] hover:bg-[#fa8e20] transition-transform active:scale-[0.98]"
+                        >
+                            Devam Et
+                        </button>
+
+                        <!-- FAST İbaresi (Görseldeki gibi butonun altında) -->
+                        <div class="flex flex-col items-center justify-center gap-2">
+                            <span 
+                                class="text-2xl font-bold text-[#ff7f00]"
+                                style="font-family: sans-serif; font-style: italic;"
+                            >
+                                fast
+                            </span>
+                            <div class="flex items-center gap-2">
+                                ${getIconHtml('building-2', 24, 'text-gray-600')}
+                                <span class="font-semibold text-gray-600 text-[10px] leading-tight">
+                                    TÜRKİYE CUMHURİYET<br/>MERKEZ BANKASI
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Diğer durumlar (loading, success, error) için HTML yapıları
+            const loadingScreen = `
+                <div class="h-full flex flex-col items-center justify-center text-center p-12 gap-4">
+                    ${getIconHtml('loader-2', 64, 'text-[#ff7f00] animate-spin')}
+                    <h2 class="text-2xl font-bold text-gray-800">Transfer İşleniyor</h2>
+                    <p class="text-gray-500">Lütfen bekleyin...</p>
+                </div>
+            `;
+            
+            const successScreen = `
+                <div class="h-full flex flex-col items-center justify-center text-center p-12 gap-4 animate-in fade-in zoom-in-95 duration-300">
+                    ${getIconHtml('check-circle-2', 64, 'text-green-500')}
+                    <h2 class="text-2xl font-bold text-gray-800">Transfer Başarılı</h2>
+                    <p class="text-gray-500">
+                        Alıcıya <span class="font-bold text-gray-700">₺${parseFloat(state.sendAmount).toFixed(2).replace('.',',')}</span> gönderildi.
+                    </p>
+                    <button 
+                        onclick="setState({ activeScreen: 'home' }); resetFlows();" 
+                        class="mt-4 w-full bg-[#ff7f00] text-white font-bold p-5 rounded-2xl text-lg shadow-[0_8px_20px_-5px_#ff7f00] hover:bg-[#fa8e20] transition-transform active:scale-[0.98]"
+                    >
+                        Ana Sayfa'ya Dön
+                    </button>
+                </div>
+            `;
+            
+            const errorScreen = `
+                <div class="h-full flex flex-col items-center justify-center text-center p-12 gap-4 animate-in fade-in zoom-in-95 duration-300">
+                    ${getIconHtml('x-circle', 64, 'text-red-500')}
+                    <h2 class="text-2xl font-bold text-gray-800">Transfer Başarısız</h2>
+                    <p class="text-gray-500">
+                        Lütfen girdiğiniz bilgileri kontrol edin (Tutar 0'dan büyük olmalı) ve tekrar deneyin.
+                    </p>
+                    <button 
+                        onclick="setState({ sendFlowState: 'form' })" 
+                        class="mt-4 w-full bg-gray-600 text-white font-bold p-5 rounded-2xl text-lg hover:bg-gray-700 transition-transform active:scale-[0.98]"
+                    >
+                        Geri Dön ve Düzelt
+                    </button>
+                </div>
+            `;
+
+            switch (state.sendFlowState) {
+                case 'loading': return loadingScreen;
+                case 'success': return successScreen;
+                case 'error': return errorScreen;
+                case 'form': default: return formScreen;
+            }
+        }
+
+        function renderBottomNav() {
+            const tabs = [
+                { icon: 'home', label: 'Ana Sayfa', screen: 'home' },
+                { icon: 'plus', label: 'Para Yükle', screen: 'deposit' },
+                { icon: 'send', label: 'Para Gönder', screen: 'send' }
+            ];
+
+            const navItems = tabs.map(tab => `
+                <button 
+                    onclick="setState({ activeScreen: '${tab.screen}' }); resetFlows();" 
+                    class="flex flex-col items-center gap-1 ${state.activeScreen === tab.screen ? 'text-[#ff7f00]' : 'text-gray-400'} transition-all"
+                >
+                    ${getIconHtml(tab.icon, 22)}
+                    <span class="text-xs font-bold">${tab.label}</span>
+                </button>
+            `).join('');
+
+            return `
+                <nav class="fixed bottom-0 left-0 right-0 max-w-[420px] mx-auto bg-white border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.02)] p-4 flex justify-around items-center rounded-t-2xl safe-area-bottom">
+                    ${navItems}
+                </nav>
+            `;
+        }
+
+        // --- ANA RENDER FONKSİYONU ---
+
+        function render() {
+            let content;
+            try {
+                switch (state.activeScreen) {
+                    case 'deposit': content = renderDeposit(); break;
+                    case 'send': content = renderSend(); break;
+                    case 'home': default: content = renderHome(); break;
+                }
+            } catch(e) {
+                console.error("Rendering Error:", e);
+                content = `<div class="p-8 text-center text-red-600">
+                            <h2>Uygulama Yüklenirken Hata Oluştu!</h2>
+                            <p>Lütfen konsolu kontrol edin (F12).</p>
+                           </div>`;
+            }
+
+            const appMarkup = `
+                <main class="flex-1 overflow-y-auto">
+                    ${content}
+                </main>
+                ${renderBottomNav()}
+            `;
+            
+            APP_CONTAINER.innerHTML = appMarkup;
+            
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+        }
+        
+        // --- BAŞLANGIÇ ÇAĞRISI (Güvenli Yükleme) ---
+        window.onload = render;
+    </script>
 
 </body>
 </html>
