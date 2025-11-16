@@ -1,0 +1,737 @@
+<div>
+<div>&lt;!DOCTYPE html&gt;</div>
+<div>&lt;html lang="tr"&gt;</div>
+<div>&lt;head&gt;</div>
+<div>&lt;metacharset="UTF-8"&gt;</div>
+<div>&lt;metaname="viewport"content="width=device-width, initial-scale=1.0"&gt;</div>
+<div>&lt;title&gt;TrendyolPay Mobil&lt;/title&gt;</div>
+<div>&lt;scriptsrc="https://cdn.tailwindcss.com"&gt;&lt;/script&gt;</div>
+<div>&lt;!-- Lucide Icons --&gt;</div>
+<div>&lt;scriptsrc="https://unpkg.com/lucide@latest"&gt;&lt;/script&gt;</div>
+<div>&lt;style&gt;</div>
+<div>/* Ana konteyner y&uuml;ksekliğini ve yazı tipini ayarlama */</div>
+<div>#app-container {</div>
+<div>font-family:'Inter', sans-serif;</div>
+<div>background-color:#f9fafb; /* gray-50 */</div>
+<div>max-width:420px; /* Mobil genişliği sim&uuml;le etme */</div>
+<div>height:800px; /* Sabit y&uuml;kseklik */</div>
+<div>margin:0auto;</div>
+<div>box-shadow:020px25px-5pxrgba(0, 0, 0, 0.1), 010px10px-5pxrgba(0, 0, 0, 0.04);</div>
+<div>border-radius:1rem;</div>
+<div>overflow:hidden;</div>
+<div>display:flex;</div>
+<div>flex-direction:column;</div>
+<div>}</div>
+<br />
+<div>/* Kaydırma &ccedil;ubuğunu gizleme (mobil g&ouml;r&uuml;n&uuml;m i&ccedil;in) */</div>
+<div>main::-webkit-scrollbar {</div>
+<div>display:none;</div>
+<div>}</div>
+<div>main {</div>
+<div>-ms-overflow-style:none; /* IE and Edge */</div>
+<div>scrollbar-width:none; /* Firefox */</div>
+<div>}</div>
+<div>&nbsp;</div>
+<div>/* iOS Safe Area desteği i&ccedil;in Tailwind kullanımı */</div>
+<div>.safe-area-bottom {</div>
+<div>padding-bottom:env(safe-area-inset-bottom);</div>
+<div>}</div>
+<div>&lt;/style&gt;</div>
+<div>&lt;/head&gt;</div>
+<div>&lt;body&gt;</div>
+<br />
+<div>&lt;divid="app-container"&gt;</div>
+<div>&lt;!-- Ana İ&ccedil;erik ve Navigasyon JS ile doldurulacak --&gt;</div>
+<div>&lt;/div&gt;</div>
+<br />
+<div>&lt;script&gt;</div>
+<div>constAPP_CONTAINER = document.getElementById('app-container');</div>
+<br />
+<div>// --- STATE Y&Ouml;NETİMİ ---</div>
+<div>let state = {</div>
+<div>activeScreen: 'home', // 'home', 'send', 'deposit'</div>
+<div>balanceVisible: true,</div>
+<div>transactions: [</div>
+<div>{ id: 1, type: 'send', name: 'Ayşe Yılmaz', amount: -150.00, icon: 'arrow-down-left', color: 'text-red-500' },</div>
+<div>{ id: 2, type: 'coffee', name: 'Espresso Bar', amount: -45.50, icon: 'coffee', color: 'text-gray-600' },</div>
+<div>{ id: 3, type: 'shop', name: 'Trendyol Market', amount: -320.75, icon: 'shopping-bag', color: 'text-gray-600' },</div>
+<div>],</div>
+<div>// Para G&ouml;nder Akışı</div>
+<div>sendFlowState: 'form', // 'form', 'loading', 'success', 'error'</div>
+<div>sendAmount: '',</div>
+<div>sendRecipientTab: 'new', // 'new', 'saved'</div>
+<div>sendMethodTab: 'iban', // 'iban', 'phone', 'other'</div>
+<div>otherMethodType: 'tckn', // 'tckn', 'email'</div>
+<div>recipientIBAN: '',</div>
+<div>recipientName: '',</div>
+<div>recipientPhone: '',</div>
+<div>recipientOther: '',</div>
+<div>saveRecipient: false,</div>
+<div>// Para Y&uuml;kle Akışı</div>
+<div>depositMethod: 'card', // 'card', 'iban'</div>
+<div>copied: false,</div>
+<div>};</div>
+<br />
+<div>// --- YARDIMCI FONKSİYONLAR ---</div>
+<br />
+<div>function setState(newState) {</div>
+<div>state = { ...state, ...newState };</div>
+<div>render(); // State değiştiğinde yeniden &ccedil;iz</div>
+<div>}</div>
+<br />
+<div>function resetFlows() {</div>
+<div>setState({</div>
+<div>sendFlowState: 'form',</div>
+<div>sendAmount: '',</div>
+<div>sendRecipientTab: 'new',</div>
+<div>sendMethodTab: 'iban',</div>
+<div>otherMethodType: 'tckn',</div>
+<div>recipientIBAN: '',</div>
+<div>recipientName: '',</div>
+<div>recipientPhone: '',</div>
+<div>recipientOther: '',</div>
+<div>saveRecipient: false,</div>
+<div>depositMethod: 'card',</div>
+<div>copied: false,</div>
+<div>});</div>
+<div>}</div>
+<br />
+<div>// G&uuml;venli İkon &Ccedil;ekme Fonksiyonu</div>
+<div>function getIconHtml(iconName, size = 20, className = '') {</div>
+<div>if (window.lucide &amp;&amp; window.lucide.icons &amp;&amp; window.lucide.icons[iconName]) {</div>
+<div>const icon = window.lucide.icons[iconName];</div>
+<div>return icon.toSvg({</div>
+<div>width: size,</div>
+<div>height: size,</div>
+<div>class: className</div>
+<div>});</div>
+<div>}</div>
+<div>// İkon bulunamazsa, sadece boş bir span d&ouml;nd&uuml;r.</div>
+<div>return`&lt;span class="lucide lucide-${iconName}" data-lucide="${iconName}" style="width: ${size}px; height: ${size}px; display: inline-block;"&gt;&lt;/span&gt;`;</div>
+<div>}</div>
+<br />
+<div>// --- İŞLEM FONKSİYONLARI ---</div>
+<br />
+<div>function handleCopyIban() {</div>
+<div>const ibanToCopy = 'TR120000000000000000000000';</div>
+<div>const textArea = document.createElement("textarea");</div>
+<div>textArea.value = ibanToCopy;</div>
+<div>textArea.style.position = "fixed";</div>
+<div>textArea.style.top = "-9999px";</div>
+<div>textArea.style.left = "-9999px";</div>
+<div>document.body.appendChild(textArea);</div>
+<div>textArea.select();</div>
+<div>try {</div>
+<div>document.execCommand('copy');</div>
+<div>setState({ copied: true });</div>
+<div>setTimeout(() =&gt; setState({ copied: false }), 2000);</div>
+<div>} catch (e) {</div>
+<div>console.error('Kopyalama başarısız', e);</div>
+<div>alert('Kopyalama başarısız oldu.');</div>
+<div>}</div>
+<div>document.body.removeChild(textArea);</div>
+<div>}</div>
+<br />
+<div>function handleSendSubmit() {</div>
+<div>if (!state.sendAmount || parseFloat(state.sendAmount) &lt;= 0) {</div>
+<div>setState({ sendFlowState: 'error' });</div>
+<div>return;</div>
+<div>}</div>
+<div>&nbsp;</div>
+<div>setState({ sendFlowState: 'loading' });</div>
+<div>&nbsp;</div>
+<div>setTimeout(() =&gt; {</div>
+<div>setState({ sendFlowState: 'success' });</div>
+<div>&nbsp;</div>
+<div>let finalRecipientName = state.recipientName || state.recipientPhone || state.recipientOther || (state.recipientIBAN.length &gt; 5 ? 'Banka M&uuml;şterisi' : 'Banka Alıcısı');</div>
+<div>&nbsp;</div>
+<div>const newTransaction = {</div>
+<div>id: state.transactions.length + 1,</div>
+<div>type: 'send',</div>
+<div>name: finalRecipientName,</div>
+<div>amount: -parseFloat(state.sendAmount),</div>
+<div>icon: 'arrow-down-left',</div>
+<div>color: 'text-red-500'</div>
+<div>};</div>
+<div>&nbsp;</div>
+<div>setState({ transactions: [newTransaction, ...state.transactions] });</div>
+<div>}, 2000);</div>
+<div>}</div>
+<br />
+<div>// --- TEMEL BİLEŞENLER (HTML String) ---</div>
+<br />
+<div>functionInputWithLabel({ label, placeholder, value, name, prefix = null, icon = null, disabled = false, type = 'text', eventName, inputMode = 'text' }) {</div>
+<div>return`</div>
+<div>&lt;div&gt;</div>
+<div>&lt;label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"&gt;</div>
+<div>${label}</div>
+<div>&lt;/label&gt;</div>
+<div>&lt;div class="bg-white p-4 rounded-2xl border border-[#ffe0c0] flex items-center gap-3 focus-within:border-[#ff9020] focus-within:ring-4 focus-within:ring-[#fff9f0] transition ${disabled ? 'opacity-60 bg-gray-100' : ''}"&gt;</div>
+<div>${prefix ? `&lt;span class="text-2xl font-bold ${disabled ? 'text-gray-400' : 'text-[#ffd0a0]'}"&gt;${prefix}&lt;/span&gt;` : ''}</div>
+<div>&lt;input</div>
+<div>type="${type}"</div>
+<div>class="w-full outline-none text-base font-medium text-gray-800 placeholder:text-gray-300 bg-transparent"</div>
+<div>placeholder="${placeholder}"</div>
+<div>value="${value}"</div>
+<div>data-name="${name}"</div>
+<div>${inputMode ? `inputmode="${inputMode}"` : ''}</div>
+<div>oninput="handleInputChange(event, '${eventName}')"</div>
+<div>${disabled ? 'disabled' : ''}</div>
+<div>/&gt;</div>
+<div>${icon || ''}</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>`;</div>
+<div>}</div>
+<br />
+<div>// Input değişikliğini yakalama ve state g&uuml;ncelleme</div>
+<div>function handleInputChange(event, eventName) {</div>
+<div>const name = event.target.dataset.name;</div>
+<div>const value = event.target.value;</div>
+<br />
+<div>const update = {};</div>
+<div>update[name] = value;</div>
+<br />
+<div>setState(update);</div>
+<div>}</div>
+<br /><br />
+<div>// --- EKRANLARIN RENDER EDİLMESİ ---</div>
+<br />
+<div>function renderHome() {</div>
+<div>const txList = state.transactions.map(tx =&gt; `</div>
+<div>&lt;div class="flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50"&gt;</div>
+<div>&lt;div class="p-3 bg-gray-50 rounded-full text-gray-600"&gt;</div>
+<div>${getIconHtml(tx.icon, 18, tx.color)}</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;div class="flex-1"&gt;</div>
+<div>&lt;p class="font-semibold text-gray-800"&gt;${tx.name}&lt;/p&gt;</div>
+<div>&lt;p class="text-sm text-gray-400"&gt;${tx.type === 'send' ? 'Para G&ouml;nderildi' : 'Harcama'}&lt;/p&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;div class="font-bold ${tx.amount &lt; 0 ? 'text-gray-800' : 'text-green-500'}"&gt;</div>
+<div>${tx.amount.toFixed(2).replace('.', ',')} ₺</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>`).join('');</div>
+<br />
+<div>return`</div>
+<div>&lt;div class="max-w-xl mx-auto animate-in fade-in flex flex-col flex-1"&gt;</div>
+<div>&lt;!-- 1. TEMİZ HEADER --&gt;</div>
+<div>&lt;div class="bg-[#ff7f00] p-6 flex justify-between items-center shadow-md rounded-b-xl sticky top-0 z-10"&gt;</div>
+<div>&lt;h1 class="text-xl font-bold text-white"&gt;TrendyolPay&lt;/h1&gt;</div>
+<div>&lt;button class="text-white opacity-80 hover:opacity-100" onclick="alert('&Ccedil;ıkış sim&uuml;lasyonu')"&gt;</div>
+<div>${getIconHtml('log-out', 20)}</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;/div&gt;</div>
+<br />
+<div>&lt;!-- 2. ANA İ&Ccedil;ERİK (KAYDIRILABİLİR) --&gt;</div>
+<div>&lt;div class="p-6 bg-gray-50 flex-1 overflow-y-auto"&gt;</div>
+<div>&nbsp;</div>
+<div>&lt;!-- Bakiye Bilgisi --&gt;</div>
+<div>&lt;div class="flex justify-between items-center mb-2"&gt;</div>
+<div>&lt;span class="text-sm font-medium text-gray-500"&gt;Toplam Bakiye&lt;/span&gt;</div>
+<div>&lt;button class="text-gray-400 hover:text-gray-600 flex items-center gap-1 text-sm" onclick="setState({ balanceVisible: !state.balanceVisible })"&gt;</div>
+<div>${state.balanceVisible ? getIconHtml('eye-off', 14) : getIconHtml('eye', 14)}</div>
+<div>${state.balanceVisible ? 'Gizle' : 'G&ouml;ster'}</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&nbsp;</div>
+<div>&lt;h2 class="text-4xl font-bold text-gray-800 mb-6"&gt;</div>
+<div>${state.balanceVisible ? "₺ 1.250,75" : "₺ &bull;&bull;&bull;&bull;"}</div>
+<div>&lt;/h2&gt;</div>
+<br />
+<div>&lt;!-- SİYAH-TURUNCU GE&Ccedil;İŞLİ FİZİKSEL KART --&gt;</div>
+<div>&lt;div class="bg-gradient-to-br from-gray-900 to-[#ff7f00] p-6 rounded-2xl shadow-xl text-white relative overflow-hidden mb-8"&gt;</div>
+<div>&lt;div class="absolute -top-10 -right-10 w-32 h-32 bg-[#ff7f00]/30 rounded-full filter blur-2xl opacity-70"&gt;&lt;/div&gt;</div>
+<div>&nbsp;</div>
+<div>&lt;div class="flex justify-between items-start mb-10"&gt;</div>
+<div>&lt;h3 class="text-2xl font-semibold"&gt;TrendyolPay&lt;/h3&gt;</div>
+<div>${getIconHtml('credit-card', 28, 'opacity-50')}</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;div class="font-mono text-xl tracking-widest mb-6"&gt;</div>
+<div>&lt;span&gt;&bull;&bull;&bull;&bull;&lt;/span&gt;&lt;span class="ml-2"&gt;&bull;&bull;&bull;&bull;&lt;/span&gt;&lt;span class="ml-2"&gt;&bull;&bull;&bull;&bull;&lt;/span&gt;&lt;span class="ml-2"&gt;9012&lt;/span&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;div class="flex justify-between items-end"&gt;</div>
+<div>&lt;div&gt;</div>
+<div>&lt;span class="block text-xs opacity-70"&gt;KART SAHİBİ&lt;/span&gt;</div>
+<div>&lt;span class="block text-md font-medium"&gt;Seda Kilisli&lt;/span&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;div&gt;</div>
+<div>&lt;span class="block text-xs opacity-70"&gt;SON K. T.&lt;/span&gt;</div>
+<div>&lt;span class="block text-md font-medium"&gt;12/28&lt;/span&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<br />
+<div>&lt;!-- SON HAREKETLER (Beyaz Kart İ&ccedil;inde) --&gt;</div>
+<div>&lt;h2 class="text-lg font-bold text-gray-800 mb-4"&gt;Son Hareketler&lt;/h2&gt;</div>
+<div>&lt;div class="bg-white rounded-2xl border border-gray-100 shadow-sm"&gt;</div>
+<div>&lt;div class="space-y-1 p-2"&gt;</div>
+<div>${txList}</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>`;</div>
+<div>}</div>
+<br />
+<div>function renderDeposit() {</div>
+<div>const ibanContent = `</div>
+<div>&lt;div class="animate-in fade-in duration-300"&gt;</div>
+<div>&lt;div class="p-6 bg-white"&gt;</div>
+<div>&lt;p class="text-gray-600 text-sm mb-4"&gt;</div>
+<div>TrendyolPay hesabına para y&uuml;klemek i&ccedil;in IBAN veya kolay adres bilgilerini kopyalayabilirsin.</div>
+<div>&lt;/p&gt;</div>
+<div>&nbsp;</div>
+<div>&lt;div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm mb-4"&gt;</div>
+<div>&lt;span class="text-xs text-gray-400 uppercase tracking-wider"&gt;Alıcı Adı&lt;/span&gt;</div>
+<div>&lt;p class="text-gray-800 font-bold text-lg mt-1"&gt;Seda Kilisli&lt;/p&gt;</div>
+<div>&lt;/div&gt;</div>
+<br />
+<div>&lt;div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm"&gt;</div>
+<div>&lt;span class="text-xs text-gray-400 uppercase tracking-wider"&gt;TrendyolPay IBAN&lt;/span&gt;</div>
+<div>&lt;div class="flex items-center justify-between gap-2 mt-2"&gt;</div>
+<div>&lt;p class="text-gray-800 font-medium text-lg font-mono tracking-tighter"&gt;TR12 000...00 00&lt;/p&gt;</div>
+<div>&lt;button</div>
+<div>onclick="handleCopyIban()"</div>
+<div>class="flex items-center gap-2 p-2 px-3 ${state.copied ? 'bg-green-100 text-green-700' : 'bg-[#fff9f0] text-[#ff7f00]'} rounded-lg transition text-sm font-semibold"</div>
+<div>&gt;</div>
+<div>${state.copied ? getIconHtml('check-circle-2', 16) : getIconHtml('copy', 16)}</div>
+<div>${state.copied ? 'Kopyalandı' : 'Kopyala'}</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&nbsp;</div>
+<div>&lt;div class="p-6"&gt;</div>
+<div>&lt;h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3"&gt;KOLAY ADRESLERİN&lt;/h3&gt;</div>
+<div>&lt;div class="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-100"&gt;</div>
+<div>&lt;div class="flex items-center justify-between p-4"&gt;</div>
+<div>&lt;div&gt;</div>
+<div>&lt;span class="text-sm font-medium text-gray-800"&gt;Telefon Numarası&lt;/span&gt;</div>
+<div>&lt;p class="text-sm text-gray-500"&gt;0 (506) 123 45 67&lt;/p&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;button class="text-sm font-bold text-[#ff7f00]"&gt;Eşleştir&lt;/button&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;div class="flex items-center justify-between p-4"&gt;</div>
+<div>&lt;div&gt;</div>
+<div>&lt;span class="text-sm font-medium text-gray-800"&gt;E-posta&lt;/span&gt;</div>
+<div>&lt;p class="text-sm text-gray-500"&gt;seda.kilisli@mail.com&lt;/p&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;button class="text-sm font-bold text-[#ff7f00]"&gt;Eşleştir&lt;/button&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;div class="flex items-center justify-between p-4"&gt;</div>
+<div>&lt;div&gt;</div>
+<div>&lt;span class="text-sm font-medium text-gray-800"&gt;TC Kimlik Numarası&lt;/span&gt;</div>
+<div>&lt;p class="text-sm text-gray-500"&gt;4921...88&lt;/p&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;button class="text-sm font-bold text-[#ff7f00]"&gt;Eşleştir&lt;/button&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<br />
+<div>&lt;div class="p-6 pt-0 space-y-4"&gt;</div>
+<div>&nbsp;</div>
+<div>&lt;div class="text-center p-4 bg-white rounded-2xl border border-gray-100 shadow-sm"&gt;</div>
+<div>&lt;span class="text-xs text-gray-400 uppercase tracking-wider"&gt;Kalan Aylık İşlem Limiti&lt;/span&gt;</div>
+<div>&lt;p class="text-2xl font-bold text-gray-800 mt-1"&gt;600.000 TL&lt;/p&gt;</div>
+<div>&lt;/div&gt;</div>
+<br />
+<div>&lt;div class="flex items-start gap-3 p-4 bg-blue-50 text-blue-800 rounded-2xl border border-blue-100"&gt;</div>
+<div>${getIconHtml('info', 18, 'flex-shrink-0 mt-0.5')}</div>
+<div>&lt;p class="text-xs"&gt;</div>
+<div>IBAN ile eşleştirdiğin kolay adres bilgilerin Aydınlatma Metni kapsamında TCMB ve BKM ile paylaşılacaktır.</div>
+<div>&lt;/p&gt;</div>
+<div>&lt;/div&gt;</div>
+<br />
+<div>&lt;button class="w-full text-center font-semibold text-[#ff7f00] p-3"&gt;</div>
+<div>Nasıl para y&uuml;klerim?</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>`;</div>
+<br />
+<div>const cardContent = `</div>
+<div>&lt;div class="space-y-6 p-6 animate-in fade-in duration-300 bg-white h-full"&gt;</div>
+<div>&lt;div&gt;</div>
+<div>&lt;label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"&gt;</div>
+<div>Kayıtlı Kart</div>
+<div>&lt;/label&gt;</div>
+<div>&lt;div class="bg-white p-4 rounded-2xl border border-[#ffe0c0] flex items-center justify-between"&gt;</div>
+<div>&lt;div class="flex items-center gap-3"&gt;</div>
+<div>${getIconHtml('credit-card', 24, 'text-[#ff7f00]')}</div>
+<div>&lt;span class="font-medium text-gray-800"&gt;&bull;&bull;&bull;&bull; 1234&lt;/span&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;button class="text-xs font-bold text-[#ff7f00]"&gt;DEĞİŞTİR&lt;/button&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&nbsp;</div>
+<div>${InputWithLabel({ label: 'Tutar', placeholder: '0', value: '', name: 'depositAmount', prefix: '₺', type: 'text', inputMode: 'numeric' })}</div>
+<br />
+<div>&lt;button class="w-full bg-[#ff7f00] text-white font-bold p-5 rounded-2xl text-lg shadow-[0_8px_20px_-5px_#ff7f00] hover:bg-[#fa8e20] transition-transform active:scale-[0.98]" onclick="alert('Kart ile y&uuml;kleme sim&uuml;lasyonu')"&gt;</div>
+<div>Para Y&uuml;kle</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>`;</div>
+<br />
+<div>return`</div>
+<div>&lt;div class="max-w-xl mx-auto animate-in fade-in slide-in-from-right-8 duration-300 flex flex-col h-full bg-gray-50"&gt;</div>
+<div>&lt;!-- Başlık --&gt;</div>
+<div>&lt;div class="p-6 flex items-center gap-4 bg-white border-b border-gray-100"&gt;</div>
+<div>&lt;button</div>
+<div>onclick="setState({ activeScreen: 'home' }); resetFlows();"</div>
+<div>class="p-2 bg-gray-100 rounded-full text-gray-600 hover:bg-gray-200"</div>
+<div>&gt;</div>
+<div>${getIconHtml('arrow-left', 20)}</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;h1 class="text-xl font-bold text-gray-800"&gt;Para Y&uuml;kle&lt;/h1&gt;</div>
+<div>&lt;/div&gt;</div>
+<br />
+<div>&lt;!-- Y&ouml;ntem Se&ccedil;imi --&gt;</div>
+<div>&lt;div class="p-6 pb-0 bg-white"&gt;</div>
+<div>&lt;div class="flex gap-2 bg-gray-100 p-2 rounded-2xl"&gt;</div>
+<div>&lt;button</div>
+<div>onclick="setState({ depositMethod: 'card' })"</div>
+<div>class="flex-1 p-3 rounded-xl font-semibold transition-all ${state.depositMethod === 'card' ? 'bg-white shadow' : 'text-gray-500'}"</div>
+<div>&gt;</div>
+<div>Kart ile</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;button</div>
+<div>onclick="setState({ depositMethod: 'iban' })"</div>
+<div>class="flex-1 p-3 rounded-xl font-semibold transition-all ${state.depositMethod === 'iban' ? 'bg-white shadow' : 'text-gray-500'}"</div>
+<div>&gt;</div>
+<div>IBAN ile</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<br />
+<div>&lt;!-- İ&ccedil;erik - Se&ccedil;ime g&ouml;re değişir --&gt;</div>
+<div>&lt;div class="flex-1 overflow-y-auto"&gt;</div>
+<div>${state.depositMethod === 'card' ? cardContent : ibanContent}</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>`;</div>
+<div>}</div>
+<br />
+<div>function renderSend() {</div>
+<div>// IBAN doğrulama sim&uuml;lasyonu i&ccedil;in maskeli isim</div>
+<div>const isIbanEntered = state.sendMethodTab === 'iban' &amp;&amp; state.recipientIBAN.length &gt; 5;</div>
+<div>// Kolay Adres doğrulama sim&uuml;lasyonu i&ccedil;in flag (Giriş tamamlandı varsayımı: 10 karakter)</div>
+<div>const isPhoneCompleted = state.sendMethodTab === 'phone' &amp;&amp; state.recipientPhone.length &gt;= 10;</div>
+<div>const isOtherCompleted = state.sendMethodTab === 'other' &amp;&amp; state.recipientOther.length &gt;= 10;</div>
+<br />
+<div>const maskedName = "S*** K*****";</div>
+<div>const verifiedBank = "Trendyol Bank A.Ş.";</div>
+<div>const maskedIban = "TRXX XXXX XXXX XXXX XXXX XXXX";</div>
+<br /><br />
+<div>const formContent = `</div>
+<div>&lt;!-- Form Alanları (Metod'a g&ouml;re değişir) --&gt;</div>
+<div>&lt;div class="animate-in fade-in duration-300"&gt;</div>
+<div>&nbsp;</div>
+<div>&lt;!-- 1. IBAN FORMU --&gt;</div>
+<div>${state.sendMethodTab === 'iban' ? `</div>
+<div>&lt;div class="space-y-4"&gt;</div>
+<div>${InputWithLabel({ label: 'Alıcı IBAN', placeholder: 'TR...', value: state.recipientIBAN, name: 'recipientIBAN' })}</div>
+<div>&nbsp;</div>
+<div>${isIbanEntered ? `</div>
+<div>&lt;div class="bg-gray-100 p-4 rounded-2xl border border-gray-200 animate-in fade-in duration-200"&gt;</div>
+<div>&lt;label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1"&gt;</div>
+<div>Alıcı Adı Soyadı (Teyit)</div>
+<div>&lt;/label&gt;</div>
+<div>&lt;p class="font-semibold text-gray-800 text-base"&gt;${maskedName}&lt;/p&gt;</div>
+<div>&lt;p class="text-xs text-gray-500 mt-1"&gt;${verifiedBank}&lt;/p&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>` : ''}</div>
+<br />
+<div>${InputWithLabel({ label: 'Alıcı Adı Soyadı', placeholder: 'Tam İsim Soyisim', value: state.recipientName, name: 'recipientName' })}</div>
+<div>&lt;/div&gt;</div>
+<div>` : ''}</div>
+<div>&nbsp;</div>
+<div>&lt;!-- 2. TELEFON NO FORMU --&gt;</div>
+<div>${state.sendMethodTab === 'phone' ? `</div>
+<div>&lt;div class="space-y-4"&gt;</div>
+<div>${InputWithLabel({</div>
+<div>label: 'Telefon Numarası',</div>
+<div>placeholder: '0 (5xx) ...',</div>
+<div>value: state.recipientPhone,</div>
+<div>name: 'recipientPhone',</div>
+<div>icon: `&lt;button onclick="alert('Rehber a&ccedil;ılma sim&uuml;lasyonu')" class="p-2 text-[#ff7f00] hover:bg-[#fff9f0] rounded-lg transition" title="Rehberden Se&ccedil;"&gt;${getIconHtml('users', 20)}&lt;/button&gt;`</div>
+<div>})}</div>
+<br />
+<div>${isPhoneCompleted ? `</div>
+<div>&lt;div class="bg-gray-100 p-4 rounded-2xl border border-gray-200 animate-in fade-in duration-200"&gt;</div>
+<div>&lt;label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1"&gt;</div>
+<div>Alıcı Bilgileri (Doğrulandı)</div>
+<div>&lt;/label&gt;</div>
+<div>&lt;p class="font-semibold text-gray-800 text-base"&gt;${maskedName}&lt;/p&gt;</div>
+<div>&lt;p class="text-xs text-gray-500 mt-1 font-mono tracking-tighter"&gt;${maskedIban}&lt;/p&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>` : ''}</div>
+<div>&lt;/div&gt;</div>
+<div>` : ''}</div>
+<div>&nbsp;</div>
+<div>&lt;!-- 3. DİĞER FORMU (TCKN/E-POSTA) --&gt;</div>
+<div>${state.sendMethodTab === 'other' ? `</div>
+<div>&lt;div class="space-y-4"&gt;</div>
+<div>&lt;div class="flex gap-2"&gt;</div>
+<div>&lt;button</div>
+<div>onclick="setState({ otherMethodType: 'tckn', recipientOther: '' })"</div>
+<div>class="flex-1 p-3 text-sm rounded-xl font-semibold ${state.otherMethodType === 'tckn' ? 'bg-white shadow border border-gray-100' : 'bg-gray-100 text-gray-500'}"</div>
+<div>&gt;</div>
+<div>TCKN</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;button</div>
+<div>onclick="setState({ otherMethodType: 'email', recipientOther: '' })"</div>
+<div>class="flex-1 p-3 text-sm rounded-xl font-semibold ${state.otherMethodType === 'email' ? 'bg-white shadow border border-gray-100' : 'bg-gray-100 text-gray-500'}"</div>
+<div>&gt;</div>
+<div>E-posta</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>${InputWithLabel({</div>
+<div>label: state.otherMethodType === 'tckn' ? 'T.C. Kimlik Numarası' : 'E-posta Adresi',</div>
+<div>placeholder: state.otherMethodType === 'tckn' ? '11...11' : 'mail@adres.com',</div>
+<div>value: state.recipientOther,</div>
+<div>name: 'recipientOther'</div>
+<div>})}</div>
+<br />
+<div>${isOtherCompleted ? `</div>
+<div>&lt;div class="bg-gray-100 p-4 rounded-2xl border border-gray-200 animate-in fade-in duration-200"&gt;</div>
+<div>&lt;label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1"&gt;</div>
+<div>Alıcı Bilgileri (Doğrulandı)</div>
+<div>&lt;/label&gt;</div>
+<div>&lt;p class="font-semibold text-gray-800 text-base"&gt;${maskedName}&lt;/p&gt;</div>
+<div>&lt;p class="text-xs text-gray-500 mt-1 font-mono tracking-tighter"&gt;${maskedIban}&lt;/p&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>` : ''}</div>
+<div>&lt;/div&gt;</div>
+<div>` : ''}</div>
+<div>&lt;/div&gt;</div>
+<div>`;</div>
+<br />
+<div>const formScreen = `</div>
+<div>&lt;div class="max-w-xl mx-auto flex flex-col h-full bg-gray-50"&gt;</div>
+<div>&lt;!-- Başlık --&gt;</div>
+<div>&lt;div class="p-6 flex items-center gap-4 bg-white border-b border-gray-100"&gt;</div>
+<div>&lt;button</div>
+<div>onclick="setState({ activeScreen: 'home' }); resetFlows();"</div>
+<div>class="p-2 bg-gray-100 rounded-full text-gray-600 hover:bg-gray-200"</div>
+<div>&gt;</div>
+<div>${getIconHtml('arrow-left', 20)}</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;h1 class="text-xl font-bold text-gray-800"&gt;Para G&ouml;nder&lt;/h1&gt;</div>
+<div>&lt;/div&gt;</div>
+<br />
+<div>&lt;!-- YENİ: Ana Sekmeler (Yeni/Kayıtlı) --&gt;</div>
+<div>&lt;div class="p-6 pb-0 bg-white"&gt;</div>
+<div>&lt;div class="flex gap-2 bg-gray-100 p-2 rounded-2xl"&gt;</div>
+<div>&lt;button</div>
+<div>onclick="setState({ sendRecipientTab: 'new' })"</div>
+<div>class="flex-1 p-3 rounded-xl font-semibold transition-all ${state.sendRecipientTab === 'new' ? 'bg-white shadow' : 'text-gray-500'}"</div>
+<div>&gt;</div>
+<div>Yeni Alıcı</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;button</div>
+<div>onclick="setState({ sendRecipientTab: 'saved' })"</div>
+<div>class="flex-1 p-3 rounded-xl font-semibold transition-all ${state.sendRecipientTab === 'saved' ? 'bg-white shadow' : 'text-gray-500'}"</div>
+<div>&gt;</div>
+<div>Kayıtlı Alıcı</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&nbsp;</div>
+<div>&lt;!-- Form Alanı (Kaydırılabilir) --&gt;</div>
+<div>&lt;div class="flex-1 overflow-y-auto p-6 space-y-6"&gt;</div>
+<br />
+<div>&lt;!-- === "YENİ ALICI" FORMU === --&gt;</div>
+<div>${state.sendRecipientTab === 'new' ? `</div>
+<div>&lt;div class="space-y-6"&gt;</div>
+<div>&lt;!-- Bakiye Bilgisi --&gt;</div>
+<div>&lt;div class="text-sm text-gray-500"&gt;</div>
+<div>G&ouml;nderilebilir bakiye: &lt;span class="font-bold text-gray-700"&gt;1.250,75 TL&lt;/span&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&nbsp;</div>
+<div>&lt;p class="text-gray-600 text-sm"&gt;</div>
+<div>G&ouml;ndermek istediğin hesaba ait IBAN, Telefon No veya diğer Kolay Adres bilgilerini girebilirsin.</div>
+<div>&lt;/p&gt;</div>
+<br />
+<div>&lt;!-- YENİ: Metod Sekmeleri (IBAN/Tel/Diğer) --&gt;</div>
+<div>&lt;div class="flex gap-2 bg-gray-100 p-1 rounded-full"&gt;</div>
+<div>&lt;button</div>
+<div>onclick="setState({ sendMethodTab: 'iban' })"</div>
+<div>class="flex-1 py-2 px-3 text-center rounded-full text-sm font-semibold transition-all ${state.sendMethodTab === 'iban' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}"</div>
+<div>&gt;</div>
+<div>IBAN</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;button</div>
+<div>onclick="setState({ sendMethodTab: 'phone' })"</div>
+<div>class="flex-1 py-2 px-3 text-center rounded-full text-sm font-semibold transition-all ${state.sendMethodTab === 'phone' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}"</div>
+<div>&gt;</div>
+<div>Telefon No</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;button</div>
+<div>onclick="setState({ sendMethodTab: 'other' })"</div>
+<div>class="flex-1 py-2 px-3 text-center rounded-full text-sm font-semibold transition-all ${state.sendMethodTab === 'other' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}"</div>
+<div>&gt;</div>
+<div>Diğer</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;/div&gt;</div>
+<br />
+<div>${formContent}</div>
+<div>&nbsp;</div>
+<div>&lt;!-- Tutar Alanı --&gt;</div>
+<div>${InputWithLabel({ label: 'Tutar', placeholder: '0', value: state.sendAmount, name: 'sendAmount', type: 'text', prefix: '₺', inputMode: 'numeric' })}</div>
+<br />
+<div>&lt;!-- Alıcıyı Kaydet Toggle --&gt;</div>
+<div>&lt;button onclick="setState({ saveRecipient: !state.saveRecipient })" class="flex items-center gap-3 w-full"&gt;</div>
+<div>&lt;div class="w-10 h-6 ${state.saveRecipient ? 'bg-[#ff7f00]' : 'bg-gray-200'} rounded-full p-0.5 flex items-center transition-all"&gt;</div>
+<div>&lt;div class="w-5 h-5 bg-white rounded-full transition-transform ${state.saveRecipient ? 'translate-x-4' : 'translate-x-0'}"&gt;&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;span class="text-sm font-medium text-gray-700"&gt;Alıcıyı kaydet&lt;/span&gt;</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>` : ''}</div>
+<div>&nbsp;</div>
+<div>&lt;!-- === "KAYITLI ALICI" EKRANI (Sim&uuml;lasyon) === --&gt;</div>
+<div>${state.sendRecipientTab === 'saved' ? `</div>
+<div>&lt;div class="flex flex-col items-center text-center p-8 bg-white rounded-2xl border border-gray-100 shadow-sm"&gt;</div>
+<div>${getIconHtml('book-user', 48, 'text-gray-300 mb-4')}</div>
+<div>&lt;h3 class="font-bold text-gray-700"&gt;Kayıtlı Alıcı Bulunamadı&lt;/h3&gt;</div>
+<div>&lt;p class="text-sm text-gray-500"&gt;</div>
+<div>"Yeni Alıcı" sekmesinden yaptığınız transferlerde "Alıcıyı kaydet" se&ccedil;eneğini işaretleyerek alıcılarınızı buraya ekleyebilirsiniz.</div>
+<div>&lt;/p&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>` : ''}</div>
+<br />
+<div>&lt;/div&gt;</div>
+<div>&nbsp;</div>
+<div>&lt;!-- Alt Kısım: Buton ve FAST Logosu --&gt;</div>
+<div>&lt;div class="p-6 bg-white border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.02)] space-y-4"&gt;</div>
+<div>&lt;button</div>
+<div>onclick="handleSendSubmit()"</div>
+<div>class="w-full bg-[#ff7f00] text-white font-bold p-5 rounded-2xl text-lg shadow-[0_8px_20px_-5px_#ff7f00] hover:bg-[#fa8e20] transition-transform active:scale-[0.98]"</div>
+<div>&gt;</div>
+<div>Devam Et</div>
+<div>&lt;/button&gt;</div>
+<br />
+<div>&lt;!-- FAST İbaresi (G&ouml;rseldeki gibi butonun altında) --&gt;</div>
+<div>&lt;div class="flex flex-col items-center justify-center gap-2"&gt;</div>
+<div>&lt;span</div>
+<div>class="text-2xl font-bold text-[#ff7f00]"</div>
+<div>style="font-family: sans-serif; font-style: italic;"</div>
+<div>&gt;</div>
+<div>fast</div>
+<div>&lt;/span&gt;</div>
+<div>&lt;div class="flex items-center gap-2"&gt;</div>
+<div>${getIconHtml('building-2', 24, 'text-gray-600')}</div>
+<div>&lt;span class="font-semibold text-gray-600 text-[10px] leading-tight"&gt;</div>
+<div>T&Uuml;RKİYE CUMHURİYET&lt;br/&gt;MERKEZ BANKASI</div>
+<div>&lt;/span&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>`;</div>
+<div>&nbsp;</div>
+<div>// Diğer durumlar (loading, success, error) i&ccedil;in HTML yapıları</div>
+<div>const loadingScreen = `</div>
+<div>&lt;div class="h-full flex flex-col items-center justify-center text-center p-12 gap-4"&gt;</div>
+<div>${getIconHtml('loader-2', 64, 'text-[#ff7f00] animate-spin')}</div>
+<div>&lt;h2 class="text-2xl font-bold text-gray-800"&gt;Transfer İşleniyor&lt;/h2&gt;</div>
+<div>&lt;p class="text-gray-500"&gt;L&uuml;tfen bekleyin...&lt;/p&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>`;</div>
+<div>&nbsp;</div>
+<div>const successScreen = `</div>
+<div>&lt;div class="h-full flex flex-col items-center justify-center text-center p-12 gap-4 animate-in fade-in zoom-in-95 duration-300"&gt;</div>
+<div>${getIconHtml('check-circle-2', 64, 'text-green-500')}</div>
+<div>&lt;h2 class="text-2xl font-bold text-gray-800"&gt;Transfer Başarılı&lt;/h2&gt;</div>
+<div>&lt;p class="text-gray-500"&gt;</div>
+<div>Alıcıya &lt;span class="font-bold text-gray-700"&gt;₺${parseFloat(state.sendAmount).toFixed(2).replace('.',',')}&lt;/span&gt; g&ouml;nderildi.</div>
+<div>&lt;/p&gt;</div>
+<div>&lt;button</div>
+<div>onclick="setState({ activeScreen: 'home' }); resetFlows();"</div>
+<div>class="mt-4 w-full bg-[#ff7f00] text-white font-bold p-5 rounded-2xl text-lg shadow-[0_8px_20px_-5px_#ff7f00] hover:bg-[#fa8e20] transition-transform active:scale-[0.98]"</div>
+<div>&gt;</div>
+<div>Ana Sayfa'ya D&ouml;n</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>`;</div>
+<div>&nbsp;</div>
+<div>const errorScreen = `</div>
+<div>&lt;div class="h-full flex flex-col items-center justify-center text-center p-12 gap-4 animate-in fade-in zoom-in-95 duration-300"&gt;</div>
+<div>${getIconHtml('x-circle', 64, 'text-red-500')}</div>
+<div>&lt;h2 class="text-2xl font-bold text-gray-800"&gt;Transfer Başarısız&lt;/h2&gt;</div>
+<div>&lt;p class="text-gray-500"&gt;</div>
+<div>L&uuml;tfen girdiğiniz bilgileri kontrol edin (Tutar 0'dan b&uuml;y&uuml;k olmalı) ve tekrar deneyin.</div>
+<div>&lt;/p&gt;</div>
+<div>&lt;button</div>
+<div>onclick="setState({ sendFlowState: 'form' })"</div>
+<div>class="mt-4 w-full bg-gray-600 text-white font-bold p-5 rounded-2xl text-lg hover:bg-gray-700 transition-transform active:scale-[0.98]"</div>
+<div>&gt;</div>
+<div>Geri D&ouml;n ve D&uuml;zelt</div>
+<div>&lt;/button&gt;</div>
+<div>&lt;/div&gt;</div>
+<div>`;</div>
+<br />
+<div>switch (state.sendFlowState) {</div>
+<div>case'loading': return loadingScreen;</div>
+<div>case'success': return successScreen;</div>
+<div>case'error': return errorScreen;</div>
+<div>case'form': default: return formScreen;</div>
+<div>}</div>
+<div>}</div>
+<br />
+<div>function renderBottomNav() {</div>
+<div>const tabs = [</div>
+<div>{ icon: 'home', label: 'Ana Sayfa', screen: 'home' },</div>
+<div>{ icon: 'plus', label: 'Para Y&uuml;kle', screen: 'deposit' },</div>
+<div>{ icon: 'send', label: 'Para G&ouml;nder', screen: 'send' }</div>
+<div>];</div>
+<br />
+<div>const navItems = tabs.map(tab =&gt; `</div>
+<div>&lt;button</div>
+<div>onclick="setState({ activeScreen: '${tab.screen}' }); resetFlows();"</div>
+<div>class="flex flex-col items-center gap-1 ${state.activeScreen === tab.screen ? 'text-[#ff7f00]' : 'text-gray-400'} transition-all"</div>
+<div>&gt;</div>
+<div>${getIconHtml(tab.icon, 22)}</div>
+<div>&lt;span class="text-xs font-bold"&gt;${tab.label}&lt;/span&gt;</div>
+<div>&lt;/button&gt;</div>
+<div>`).join('');</div>
+<br />
+<div>return`</div>
+<div>&lt;nav class="fixed bottom-0 left-0 right-0 max-w-[420px] mx-auto bg-white border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.02)] p-4 flex justify-around items-center rounded-t-2xl safe-area-bottom"&gt;</div>
+<div>${navItems}</div>
+<div>&lt;/nav&gt;</div>
+<div>`;</div>
+<div>}</div>
+<br />
+<div>// --- ANA RENDER FONKSİYONU ---</div>
+<br />
+<div>function render() {</div>
+<div>let content;</div>
+<div>switch (state.activeScreen) {</div>
+<div>case'deposit': content = renderDeposit(); break;</div>
+<div>case'send': content = renderSend(); break;</div>
+<div>case'home': default: content = renderHome(); break;</div>
+<div>}</div>
+<br />
+<div>const appMarkup = `</div>
+<div>&lt;main class="flex-1 overflow-y-auto"&gt;</div>
+<div>${content}</div>
+<div>&lt;/main&gt;</div>
+<div>${renderBottomNav()}</div>
+<div>`;</div>
+<div>&nbsp;</div>
+<div>APP_CONTAINER.innerHTML = appMarkup;</div>
+<div>// İkonların d&uuml;zg&uuml;n &ccedil;izildiğinden emin olmak i&ccedil;in ekleme</div>
+<div>if (window.lucide) {</div>
+<div>window.lucide.createIcons();</div>
+<div>}</div>
+<div>}</div>
+<br />
+<div>// Uygulamayı başlat</div>
+<div>render();</div>
+<div>&lt;/script&gt;</div>
+<br />
+<div>&lt;/body&gt;</div>
+<div>&lt;/html&gt;</div>
+</div>
