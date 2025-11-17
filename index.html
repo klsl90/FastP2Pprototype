@@ -156,8 +156,6 @@
             setState({ sendFlowState: 'loading' });
             
             setTimeout(() => {
-                setState({ sendFlowState: 'success' });
-                
                 let finalRecipientName = state.recipientName || state.recipientPhone || state.recipientOther || (state.recipientIBAN.length > 5 ? 'Banka Müşterisi' : 'Banka Alıcısı');
                 
                 const newTransaction = {
@@ -183,15 +181,20 @@
                          newRecipient = { name: finalRecipientName, type: 'EMAIL', info: state.recipientOther.substring(0, 4) + '****' };
                     }
                     
-                    // Sadece geçerli bir alıcı kaydedildiyse ekle
-                    if (newRecipient.name && newRecipient.info) {
-                        // Var olanı kontrol etmeden ekliyorum (simülasyonu basit tutmak için)
-                        setState({ savedRecipients: [...state.savedRecipients, newRecipient], transactions: [newTransaction, ...state.transactions] });
-                        return;
+                    // Sadece geçerli bir alıcı kaydedildiyse (veya kayıt mantığına uygunsa)
+                    if (newRecipient.name && (newRecipient.info || newRecipient.type !== 'IBAN')) {
+                        // Yeni kaydedilen listeyi oluştur ve state'i tek bir çağrıda güncelle
+                        setState({ 
+                            savedRecipients: [...state.savedRecipients, newRecipient], 
+                            transactions: [newTransaction, ...state.transactions],
+                            sendFlowState: 'success' 
+                        });
+                        return; // Başarılı kayıttan sonra devam etme
                     }
                 }
-
-                setState({ transactions: [newTransaction, ...state.transactions] });
+                
+                // Kayıt yapılmadıysa veya başarısız olduysa, sadece transferi tamamla
+                setState({ transactions: [newTransaction, ...state.transactions], sendFlowState: 'success' });
             }, 2000);
         }
 
