@@ -132,6 +132,17 @@
         }
 
         function handleSendSubmit() {
+            // IBAN İsim Eşleşme Simülasyonu
+            const isIbanTransfer = state.sendMethodTab === 'iban';
+            const isNameValid = state.recipientName.toLowerCase().startsWith('seda'); // Sadece "Seda" ile başlayan isimleri kabul et
+            
+            if (isIbanTransfer && state.recipientIBAN.length > 5 && !isNameValid) {
+                // IBAN girilmiş, ancak isim "Seda" ile başlamıyor
+                setState({ sendFlowState: 'error' });
+                return;
+            }
+
+            // Genel Tutar Kontrolü
             if (!state.sendAmount || parseFloat(state.sendAmount) <= 0) {
                 setState({ sendFlowState: 'error' });
                 return;
@@ -159,7 +170,7 @@
 
         // --- TEMEL BİLEŞENLER (HTML String) ---
 
-        function InputWithLabel({ label, placeholder, value, name, prefix = null, icon = null, disabled = false, type = 'text', eventName, inputMode = 'text' }) {
+        function InputWithLabel({ label, placeholder, value, name, prefix = null, icon = null, disabled = false, type = 'text', inputMode = 'text', maxLength = null }) {
             return `
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
@@ -174,7 +185,8 @@
                             value="${value}"
                             data-name="${name}"
                             ${inputMode ? `inputmode="${inputMode}"` : ''}
-                            oninput="handleInputChange(event, '${eventName}')"
+                            ${maxLength ? `maxlength="${maxLength}"` : ''}
+                            oninput="handleInputChange(event, '${name}')"
                             ${disabled ? 'disabled' : ''}
                         />
                         ${icon || ''}
@@ -184,8 +196,7 @@
         }
 
         // Input değişikliğini yakalama ve state güncelleme
-        function handleInputChange(event, eventName) {
-            const name = event.target.dataset.name;
+        function handleInputChange(event, name) {
             const value = event.target.value;
 
             const update = {};
@@ -455,6 +466,7 @@
                             placeholder: '0 (5xx) ...', 
                             value: state.recipientPhone, 
                             name: 'recipientPhone',
+                            maxLength: 10,
                             icon: `<button onclick="alert('Rehber açılma simülasyonu')" class="p-2 text-[#ff7f00] hover:bg-[#fff9f0] rounded-lg transition" title="Rehberden Seç">${getIconHtml('users', 20)}</button>`
                         })}
 
@@ -491,7 +503,8 @@
                             label: state.otherMethodType === 'tckn' ? 'T.C. Kimlik Numarası' : 'E-posta Adresi',
                             placeholder: state.otherMethodType === 'tckn' ? '11...11' : 'mail@adres.com',
                             value: state.recipientOther,
-                            name: 'recipientOther'
+                            name: 'recipientOther',
+                            maxLength: state.otherMethodType === 'tckn' ? 11 : null
                         })}
 
                         ${isOtherCompleted ? `
@@ -662,7 +675,7 @@
                     ${getIconHtml('x-circle', 64, 'text-red-500')}
                     <h2 class="text-2xl font-bold text-gray-800">Transfer Başarısız</h2>
                     <p class="text-gray-500">
-                        Lütfen girdiğiniz bilgileri kontrol edin (Tutar 0'dan büyük olmalı) ve tekrar deneyin.
+                        Lütfen girdiğiniz bilgileri kontrol edin (Tutar 0'dan büyük olmalı veya İsim/IBAN eşleşmedi) ve tekrar deneyin.
                     </p>
                     <button 
                         onclick="setState({ sendFlowState: 'form' })" 
