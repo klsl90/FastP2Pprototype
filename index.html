@@ -55,6 +55,11 @@
                 { id: 2, type: 'coffee', name: 'Espresso Bar', amount: -45.50, icon: 'coffee', color: 'text-gray-600' },
                 { id: 3, type: 'shop', name: 'Trendyol Market', amount: -320.75, icon: 'shopping-bag', color: 'text-gray-600' },
             ],
+            // Yeni State: Kayıtlı Alıcılar
+            savedRecipients: [
+                 { name: 'Mehmet Yılmaz', type: 'IBAN', info: 'TRXX XXXX XXXX' },
+                 { name: 'Gizem Can', type: 'PHONE', info: '0532 **** 56' }
+            ],
             // Para Gönder Akışı
             sendFlowState: 'form', // 'form', 'loading', 'success', 'error'
             sendAmount: '',
@@ -164,6 +169,28 @@
                     color: 'text-red-500'
                 };
                 
+                // YENİ: Alıcıyı Kaydetme
+                if (state.saveRecipient) {
+                    let newRecipient = {};
+
+                    if (state.sendMethodTab === 'iban' && state.recipientIBAN) {
+                        newRecipient = { name: state.recipientName, type: 'IBAN', info: state.recipientIBAN.substring(0, 7) + '****' };
+                    } else if (state.sendMethodTab === 'phone' && state.recipientPhone) {
+                         newRecipient = { name: finalRecipientName, type: 'PHONE', info: state.recipientPhone.substring(0, 6) + '****' };
+                    } else if (state.sendMethodTab === 'other' && state.otherMethodType === 'tckn') {
+                        newRecipient = { name: finalRecipientName, type: 'TCKN', info: state.recipientOther.substring(0, 4) + '****' };
+                    } else if (state.sendMethodTab === 'other' && state.otherMethodType === 'email') {
+                         newRecipient = { name: finalRecipientName, type: 'EMAIL', info: state.recipientOther.substring(0, 4) + '****' };
+                    }
+                    
+                    // Sadece geçerli bir alıcı kaydedildiyse ekle
+                    if (newRecipient.name && newRecipient.info) {
+                        // Var olanı kontrol etmeden ekliyorum (simülasyonu basit tutmak için)
+                        setState({ savedRecipients: [...state.savedRecipients, newRecipient], transactions: [newTransaction, ...state.transactions] });
+                        return;
+                    }
+                }
+
                 setState({ transactions: [newTransaction, ...state.transactions] });
             }, 2000);
         }
@@ -521,6 +548,22 @@
                 </div>
             `;
 
+            const registeredRecipientsList = state.savedRecipients.map(recipient => `
+                <div class="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:bg-gray-50 cursor-pointer" onclick="alert('${recipient.name} seçildi. Tutar girilebilir.')">
+                    <div class="flex items-center gap-3">
+                        <div class="p-3 bg-gray-100 rounded-full text-gray-600">
+                             ${getIconHtml(recipient.type === 'IBAN' ? 'banknote' : recipient.type === 'PHONE' ? 'phone' : recipient.type === 'TCKN' ? 'file-text' : 'mail', 18)}
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-800">${recipient.name}</p>
+                            <p class="text-sm text-gray-500">${recipient.info}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-bold text-gray-400">${recipient.type}</span>
+                </div>
+            `).join('');
+
+
             const formScreen = `
                 <div class="max-w-xl mx-auto flex flex-col h-full bg-gray-50">
                     <!-- Başlık -->
@@ -604,14 +647,23 @@
                         </div>
                         ` : ''}
                         
-                        <!-- === "KAYITLI ALICI" EKRANI (Simülasyon) === -->
+                        <!-- === "KAYITLI ALICI" EKRANI === -->
                         ${state.sendRecipientTab === 'saved' ? `
-                        <div class="flex flex-col items-center text-center p-8 bg-white rounded-2xl border border-gray-100 shadow-sm">
-                            ${getIconHtml('book-user', 48, 'text-gray-300 mb-4')}
-                            <h3 class="font-bold text-gray-700">Kayıtlı Alıcı Bulunamadı</h3>
-                            <p class="text-sm text-gray-500">
-                                "Yeni Alıcı" sekmesinden yaptığınız transferlerde "Alıcıyı kaydet" seçeneğini işaretleyerek alıcılarınızı buraya ekleyebilirsiniz.
-                            </p>
+                        <div class="space-y-4">
+                            ${state.savedRecipients.length > 0 ? `
+                                <h3 class="text-sm font-bold text-gray-700 mb-2">KAYITLI ALICILARINIZ</h3>
+                                <div class="space-y-3">
+                                    ${registeredRecipientsList}
+                                </div>
+                            ` : `
+                                <div class="flex flex-col items-center text-center p-8 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                                    ${getIconHtml('book-user', 48, 'text-gray-300 mb-4')}
+                                    <h3 class="font-bold text-gray-700">Kayıtlı Alıcı Bulunamadı</h3>
+                                    <p class="text-sm text-gray-500">
+                                        "Yeni Alıcı" sekmesinden yaptığınız transferlerde "Alıcıyı kaydet" seçeneğini işaretleyerek alıcılarınızı buraya ekleyebilirsiniz.
+                                    </p>
+                                </div>
+                            `}
                         </div>
                         ` : ''}
 
