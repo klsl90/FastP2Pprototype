@@ -38,9 +38,18 @@
 
         /* Bottom Sheet Stillleri */
         .bottom-sheet-overlay {
+            /* Başlangıçta görünmezlik ayarı kaldırıldı, görünürlük state ile yönetilecek */
             background-color: rgba(0, 0, 0, 0.5);
             transition: opacity 0.3s;
             z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* Aktif olduğunda overlay görünür yapılır */
+        .bottom-sheet-active .bottom-sheet-overlay {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .bottom-sheet-content {
@@ -325,12 +334,9 @@
 
         // --- BİLGİLENDİRME BOTTOM SHEET'İNİN HTML'İ ---
         function renderInfoSheet() {
-            // isInfoSheetOpen state'i true ise, bottom-sheet-active class'ı eklenir
-            const sheetClass = state.isInfoSheetOpen ? 'bottom-sheet-active' : 'opacity-0 pointer-events-none';
-            
             return `
                 <div 
-                    class="bottom-sheet-overlay fixed inset-0 flex justify-center items-end ${sheetClass}"
+                    class="bottom-sheet-overlay fixed inset-0 flex justify-center items-end"
                     style="transition: opacity 0.3s;"
                     onclick="setState({ isInfoSheetOpen: false })"
                 >
@@ -459,6 +465,11 @@
         }
 
         function renderDeposit() {
+            // YENİ: Kolay adres eşleşme durumlarını al
+            const isPhoneMatched = state.matchedAddresses['0 (506) 123 45 67'];
+            const isEmailMatched = state.matchedAddresses['seda.kilisli@mail.com'];
+            const isTcknMatched = state.matchedAddresses['4921...88'];
+
             const ibanContent = `
                 <div class="animate-in fade-in duration-300">
                     <div class="p-6 bg-white">
@@ -489,26 +500,35 @@
                     <div class="p-6">
                         <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">KOLAY ADRESLERİN</h3>
                         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-100">
+                            <!-- Telefon Numarası -->
                             <div class="flex items-center justify-between p-4">
                                 <div>
                                     <span class="text-sm font-medium text-gray-800">Telefon Numarası</span>
                                     <p class="text-sm text-gray-500">0 (506) 123 45 67</p>
                                 </div>
-                                <button onclick="handleMatchRecipient('0 (506) 123 45 67')" class="text-sm font-bold text-[#ff7f00]">Eşleştir</button>
+                                <button onclick="handleMatchRecipient('0 (506) 123 45 67')" class="text-sm font-bold ${isPhoneMatched ? 'text-green-600' : 'text-[#ff7f00]'}">
+                                    ${isPhoneMatched ? 'Eşleşti' : 'Eşleştir'}
+                                </button>
                             </div>
+                            <!-- E-posta -->
                             <div class="flex items-center justify-between p-4">
                                 <div>
                                     <span class="text-sm font-medium text-gray-800">E-posta</span>
                                     <p class="text-sm text-gray-500">seda.kilisli@mail.com</p>
                                 </div>
-                                <button onclick="handleMatchRecipient('seda.kilisli@mail.com')" class="text-sm font-bold text-[#ff7f00]">Eşleştir</button>
+                                <button onclick="handleMatchRecipient('seda.kilisli@mail.com')" class="text-sm font-bold ${isEmailMatched ? 'text-green-600' : 'text-[#ff7f00]'}">
+                                    ${isEmailMatched ? 'Eşleşti' : 'Eşleştir'}
+                                </button>
                             </div>
+                            <!-- TC Kimlik Numarası -->
                             <div class="flex items-center justify-between p-4">
                                 <div>
                                     <span class="text-sm font-medium text-gray-800">TC Kimlik Numarası</span>
                                     <p class="text-sm text-gray-500">4921...88</p>
                                 </div>
-                                <button onclick="handleMatchRecipient('4921...88')" class="text-sm font-bold text-[#ff7f00]">Eşleştir</button>
+                                <button onclick="handleMatchRecipient('4921...88')" class="text-sm font-bold ${isTcknMatched ? 'text-green-600' : 'text-[#ff7f00]'}">
+                                    ${isTcknMatched ? 'Eşleşti' : 'Eşleştir'}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -978,16 +998,22 @@
                     ${content}
                 </main>
                 ${renderBottomNav()}
-                ${renderInfoSheet()}
+                <!-- Bottom sheet'i sadece ana konteynırın üzerinde göster -->
+                <div class="fixed inset-0 max-w-[420px] mx-auto ${state.isInfoSheetOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}" style="transition: opacity 0.3s;">
+                    ${renderInfoSheet()}
+                </div>
             `;
             
             APP_CONTAINER.innerHTML = appMarkup;
             
-            // Bottom Sheet'in açılma CSS sınıfını ana konteynere uygulama
-            if (state.isInfoSheetOpen) {
-                APP_CONTAINER.classList.add('bottom-sheet-active');
-            } else {
-                APP_CONTAINER.classList.remove('bottom-sheet-active');
+            // Bottom Sheet'in CSS sınıfını (transform) uygulama
+            const overlay = APP_CONTAINER.querySelector('.bottom-sheet-overlay');
+            if (overlay) {
+                if (state.isInfoSheetOpen) {
+                    APP_CONTAINER.classList.add('bottom-sheet-active');
+                } else {
+                    APP_CONTAINER.classList.remove('bottom-sheet-active');
+                }
             }
 
             if (window.lucide) {
