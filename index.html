@@ -36,30 +36,46 @@
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* Bottom Sheet Stillleri */
-        .bottom-sheet-overlay {
-            /* Başlangıçta görünmezlik ayarı kaldırıldı, görünürlük state ile yönetilecek */
-            background-color: rgba(0, 0, 0, 0.5);
-            transition: opacity 0.3s;
-            z-index: 50;
-            opacity: 0;
-            pointer-events: none;
-        }
-        
-        /* Aktif olduğunda overlay görünür yapılır */
-        .bottom-sheet-active .bottom-sheet-overlay {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .bottom-sheet-content {
-            z-index: 60;
+        /* Bottom Sheet CSS */
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-width: 420px;
+            margin: 0 auto;
+            background-color: white;
+            border-top-left-radius: 1.5rem;
+            border-top-right-radius: 1.5rem;
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.1);
             transform: translateY(100%);
             transition: transform 0.3s ease-out;
+            z-index: 50;
+            height: auto;
+            max-height: 90%;
+            overflow-y: auto;
         }
 
-        .bottom-sheet-active .bottom-sheet-content {
+        .bottom-sheet-active {
             transform: translateY(0);
+        }
+
+        .bottom-sheet-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease-out, visibility 0s 0.3s;
+        }
+        .bottom-sheet-overlay-active {
+            visibility: visible;
+            opacity: 1;
+            transition-delay: 0s;
         }
     </style>
 </head>
@@ -75,7 +91,6 @@
         // --- STATE YÖNETİMİ ---
         let state = {
             activeScreen: 'home', // 'home', 'send', 'deposit', 'selectRecipient'
-            isInfoSheetOpen: false, // Bottom Sheet durumu
             balanceVisible: true,
             transactions: [
                 { id: 1, type: 'send', name: 'Ayşe Yılmaz', amount: -150.00, icon: 'arrow-down-left', color: 'text-red-500' },
@@ -95,16 +110,10 @@
                 { id: 109, name: 'Ali Kahraman', info: 'ali@mail.com', type: 'E-posta' },
                 { id: 110, name: 'Gizem Öztürk', info: '507...', type: 'GSM' },
             ],
-            // Yeni Eklenen: Eşleşen adresleri tutar
-            matchedAddresses: {
-                '0 (506) 123 45 67': false,
-                'seda.kilisli@mail.com': false,
-                '4921...88': false
-            },
             // Para Gönder Akışı
             sendFlowState: 'form', // 'form', 'loading', 'success', 'error'
             sendAmount: '',
-            sendRecipientTab: 'new', // 'new' veya 'saved'
+            sendRecipientTab: 'new', // Burası geri geldi: 'new' veya 'saved'
             sendMethodTab: 'trendyolpay', // 'trendyolpay', 'iban', 'phone', 'other' (Default TrendyolPay)
             otherMethodType: 'tckn', // 'tckn', 'email'
             recipientIBAN: '',
@@ -115,6 +124,8 @@
             // Para Yükle Akışı
             depositMethod: 'card', // 'card', 'iban'
             copied: false,
+            matchedAddresses: {}, // Kolay adres eşleşme durumu
+            isInfoSheetOpen: false // Bottom Sheet durumu
         };
 
         // --- YARDIMCI FONKSİYONLAR ---
@@ -138,7 +149,8 @@
                 saveRecipient: false,
                 depositMethod: 'card',
                 copied: false,
-                isInfoSheetOpen: false, // Bottom sheet'i kapat
+                isInfoSheetOpen: false,
+                matchedAddresses: {},
             });
         }
 
@@ -178,10 +190,9 @@
             document.body.removeChild(textArea);
         }
         
-        // YENİ: Eşleşme Aksiyonu
-        function handleMatchRecipient(key) {
-            const newMatchedAddresses = { ...state.matchedAddresses };
-            newMatchedAddresses[key] = true;
+        function handleMatchRecipient(type, info, id) {
+            alert(`${type} (${info}) başarıyla eşleştirildi. (Simülasyon)`);
+            const newMatchedAddresses = { ...state.matchedAddresses, [id]: true };
             setState({ matchedAddresses: newMatchedAddresses });
         }
 
@@ -207,7 +218,12 @@
             setTimeout(() => {
                 setState({ sendFlowState: 'success' });
                 
-                let finalRecipientName = state.recipientName || state.recipientPhone || state.recipientOther || (state.recipientIBAN.length > 5 ? 'Banka Müşterisi' : 'Banka Alıcısı');
+                let finalRecipientName;
+                if (state.sendMethodTab === 'trendyolpay' && state.recipientPhone === '5057746649') {
+                    finalRecipientName = 'Betül Aydın';
+                } else {
+                    finalRecipientName = state.recipientName || state.recipientPhone || state.recipientOther || (state.recipientIBAN.length > 5 ? 'Banka Müşterisi' : 'Banka Alıcısı');
+                }
                 
                 // Alıcıyı Kaydetme İşlemi
                 if (state.saveRecipient) {
@@ -274,7 +290,7 @@
             setState(update);
         }
 
-        // --- KAYITLI ALICI LİSTESİ EKRANI (Yeni) ---
+        // --- KAYITLI ALICI LİSTESİ EKRANI ---
         function renderRecipientSelection() {
             const listContent = state.savedRecipients.map(recipient => `
                 <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between hover:bg-gray-50 cursor-pointer" onclick="selectRecipient(${recipient.id})">
@@ -300,7 +316,7 @@
                         </button>
                         <h1 class="text-xl font-bold text-gray-800">Kayıtlı Alıcılar</h1>
                     </div>
-                    <div class="flex-1 overflow-y-auto p-6 space-y-3">
+                    <div class="p-6 flex-1 overflow-y-auto space-y-3">
                         ${listContent}
                     </div>
                 </div>
@@ -313,9 +329,9 @@
                 // Seçilen alıcıya göre formu doldur
                 let newState = {
                     activeScreen: 'send',
-                    sendMethodTab: recipient.type.toLowerCase(),
+                    sendMethodTab: recipient.type.toLowerCase() === 'iban' ? 'iban' : recipient.type.toLowerCase() === 'gsm' ? 'phone' : 'other',
                     recipientName: recipient.name,
-                    sendRecipientTab: 'new' // Formu aç
+                    sendRecipientTab: 'new' 
                 };
 
                 if (recipient.type === 'IBAN') {
@@ -323,7 +339,6 @@
                 } else if (recipient.type === 'GSM') {
                     newState.recipientPhone = recipient.info.replace('...', '');
                 } else if (recipient.type === 'E-posta' || recipient.type === 'TCKN') {
-                    newState.sendMethodTab = 'other';
                     newState.otherMethodType = recipient.type === 'TCKN' ? 'tckn' : 'email';
                     newState.recipientOther = recipient.info.replace('...', '');
                 }
@@ -332,60 +347,8 @@
             }
         }
 
-        // --- BİLGİLENDİRME BOTTOM SHEET'İNİN HTML'İ ---
-        function renderInfoSheet() {
-            return `
-                <div 
-                    class="bottom-sheet-overlay fixed inset-0 flex justify-center items-end"
-                    style="transition: opacity 0.3s;"
-                    onclick="setState({ isInfoSheetOpen: false })"
-                >
-                    <div 
-                        class="bottom-sheet-content bg-white w-full max-w-[420px] rounded-t-3xl shadow-2xl relative"
-                        onclick="event.stopPropagation()"
-                        style="transition: transform 0.3s ease-out;"
-                    >
-                        <div class="p-6 safe-area-bottom overflow-y-auto max-h-[80vh]">
-                            <div class="flex justify-between items-center mb-4">
-                                <h2 class="text-xl font-bold text-gray-800">Para Yükleme Bilgileri</h2>
-                                <button onclick="setState({ isInfoSheetOpen: false })" class="p-2 text-gray-500 hover:text-gray-800">
-                                    ${getIconHtml('x', 24)}
-                                </button>
-                            </div>
 
-                            <p class="text-gray-600 mb-6">TrendyolPay cüzdanına para yüklemek için aşağıdaki adımları takip edebilirsin.</p>
-
-                            <div class="space-y-6">
-                                <!-- 1. Kart ile Yükleme -->
-                                <div class="border-b pb-4">
-                                    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2 mb-2">${getIconHtml('credit-card', 20, 'text-[#ff7f00]')} Kart ile Yükleme</h3>
-                                    <ul class="list-disc list-inside text-sm text-gray-600 space-y-1 ml-4">
-                                        <li>Cüzdanına kayıtlı banka/kredi kartın ile anında yükleme yapabilirsin.</li>
-                                        <li>Yükleme limiti, kullandığın kartın limitine bağlıdır.</li>
-                                        <li>İşlem ücreti bulunmamaktadır.</li>
-                                    </ul>
-                                </div>
-                                
-                                <!-- 2. IBAN/FAST ile Yükleme -->
-                                <div class="border-b pb-4">
-                                    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2 mb-2">${getIconHtml('banknote', 20, 'text-[#ff7f00]')} IBAN/FAST ile Yükleme</h3>
-                                    <ul class="list-disc list-inside text-sm text-gray-600 space-y-1 ml-4">
-                                        <li>Sana özel tanımlanan TrendyolPay IBAN'ına (Para Yükle ekranında görünür) EFT/FAST yapabilirsin.</li>
-                                        <li>Yalnızca kendi adına kayıtlı banka hesaplarından transfer yapabilirsin.</li>
-                                        <li>FAST sistemi sayesinde 7/24 anlık transfer mümkündür.</li>
-                                        <li>İşlem limitleri TCMB ve BKM tarafından belirlenen limitlerle sınırlıdır.</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            
-                            <button onclick="setState({ isInfoSheetOpen: false })" class="w-full bg-[#ff7f00] text-white font-bold p-3 mt-8 rounded-2xl">
-                                Kapat
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
+        // --- EKRANLARIN RENDER EDİLMESİ ---
 
         function renderHome() {
             const txList = state.transactions.map(tx => `
@@ -465,11 +428,6 @@
         }
 
         function renderDeposit() {
-            // YENİ: Kolay adres eşleşme durumlarını al
-            const isPhoneMatched = state.matchedAddresses['0 (506) 123 45 67'];
-            const isEmailMatched = state.matchedAddresses['seda.kilisli@mail.com'];
-            const isTcknMatched = state.matchedAddresses['4921...88'];
-
             const ibanContent = `
                 <div class="animate-in fade-in duration-300">
                     <div class="p-6 bg-white">
@@ -500,34 +458,31 @@
                     <div class="p-6">
                         <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">KOLAY ADRESLERİN</h3>
                         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-100">
-                            <!-- Telefon Numarası -->
                             <div class="flex items-center justify-between p-4">
                                 <div>
                                     <span class="text-sm font-medium text-gray-800">Telefon Numarası</span>
                                     <p class="text-sm text-gray-500">0 (506) 123 45 67</p>
                                 </div>
-                                <button onclick="handleMatchRecipient('0 (506) 123 45 67')" class="text-sm font-bold ${isPhoneMatched ? 'text-green-600' : 'text-[#ff7f00]'}">
-                                    ${isPhoneMatched ? 'Eşleşti' : 'Eşleştir'}
+                                <button onclick="handleMatchRecipient('Telefon Numarası', '0 (506) 123 45 67', 1)" class="text-sm font-bold ${state.matchedAddresses[1] ? 'text-green-600' : 'text-[#ff7f00]'}">
+                                    ${state.matchedAddresses[1] ? 'Eşleşti' : 'Eşleştir'}
                                 </button>
                             </div>
-                            <!-- E-posta -->
                             <div class="flex items-center justify-between p-4">
                                 <div>
                                     <span class="text-sm font-medium text-gray-800">E-posta</span>
                                     <p class="text-sm text-gray-500">seda.kilisli@mail.com</p>
                                 </div>
-                                <button onclick="handleMatchRecipient('seda.kilisli@mail.com')" class="text-sm font-bold ${isEmailMatched ? 'text-green-600' : 'text-[#ff7f00]'}">
-                                    ${isEmailMatched ? 'Eşleşti' : 'Eşleştir'}
+                                <button onclick="handleMatchRecipient('E-posta', 'seda.kilisli@mail.com', 2)" class="text-sm font-bold ${state.matchedAddresses[2] ? 'text-green-600' : 'text-[#ff7f00]'}">
+                                    ${state.matchedAddresses[2] ? 'Eşleşti' : 'Eşleştir'}
                                 </button>
                             </div>
-                            <!-- TC Kimlik Numarası -->
                             <div class="flex items-center justify-between p-4">
                                 <div>
                                     <span class="text-sm font-medium text-gray-800">TC Kimlik Numarası</span>
                                     <p class="text-sm text-gray-500">4921...88</p>
                                 </div>
-                                <button onclick="handleMatchRecipient('4921...88')" class="text-sm font-bold ${isTcknMatched ? 'text-green-600' : 'text-[#ff7f00]'}">
-                                    ${isTcknMatched ? 'Eşleşti' : 'Eşleştir'}
+                                <button onclick="handleMatchRecipient('TC Kimlik Numarası', '4921...88', 3)" class="text-sm font-bold ${state.matchedAddresses[3] ? 'text-green-600' : 'text-[#ff7f00]'}">
+                                    ${state.matchedAddresses[3] ? 'Eşleşti' : 'Eşleştir'}
                                 </button>
                             </div>
                         </div>
@@ -620,7 +575,7 @@
             // IBAN doğrulama simülasyonu için maskeli isim
             const isIbanEntered = state.sendMethodTab === 'iban' && state.recipientIBAN.length > 5;
             // Kolay Adres doğrulama simülasyonu için flag (Giriş tamamlandı varsayımı: 10 karakter)
-            const isPhoneCompleted = state.sendMethodTab === 'phone' && state.recipientPhone.length >= 10;
+            const isPhoneCompleted = (state.sendMethodTab === 'trendyolpay' || state.sendMethodTab === 'phone') && state.recipientPhone.length >= 10;
             const isOtherCompleted = state.sendMethodTab === 'other' && state.recipientOther.length >= 10;
 
             const maskedName = "S*** K*****";
@@ -708,7 +663,15 @@
                                     inputMode: 'numeric',
                                     icon: `<button onclick="alert('Rehber açılma simülasyonu')" class="p-2 text-[#ff7f00] hover:bg-[#fff9f0] rounded-lg transition" title="Rehberden Seç">${getIconHtml('users', 20)}</button>`
                                 })}
-                                <p class="text-xs text-gray-500">TrendyolPay anlık transferi için alıcının GSM numarasını girin.</p>
+                                ${state.recipientPhone === '5057746649' ? `
+                                    <div class="bg-green-50 p-4 rounded-2xl border border-green-200 animate-in fade-in duration-200">
+                                        <p class="font-semibold text-green-800 text-sm">Betül Aydın (Cüzdan No: ****9012) bulundu.</p>
+                                    </div>
+                                ` : state.recipientPhone.length > 5 && state.recipientPhone !== '5057746649' ? `
+                                    <div class="bg-red-50 p-4 rounded-2xl border border-red-200 animate-in fade-in duration-200">
+                                        <p class="font-semibold text-red-800 text-sm">Bu numara ile eşleşen TrendyolPay cüzdanı bulunamadı.</p>
+                                    </div>
+                                ` : `<p class="text-xs text-gray-500">TrendyolPay anlık transferi için alıcının GSM numarasını girin.</p>`}
                             </div>
                             ` : ''}
 
@@ -973,6 +936,59 @@
             `;
         }
 
+        // --- BİLGİLENDİRME ALT SAYFA (BOTTOM SHEET) ---
+        function renderInfoSheet() {
+            return `
+                <div class="bottom-sheet-overlay ${state.isInfoSheetOpen ? 'bottom-sheet-overlay-active' : ''}" onclick="setState({ isInfoSheetOpen: false })"></div>
+                <div class="bottom-sheet ${state.isInfoSheetOpen ? 'bottom-sheet-active' : ''} safe-area-bottom">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">Nasıl Para Yüklenir?</h2>
+                            <button onclick="setState({ isInfoSheetOpen: false })" class="text-gray-500 hover:text-gray-700">
+                                ${getIconHtml('x', 24)}
+                            </button>
+                        </div>
+                        
+                        <!-- İllüstrasyon Yer Tutucu -->
+                        <div class="w-full h-32 bg-gray-100 rounded-xl mb-6 flex items-center justify-center">
+                            <span class="text-sm text-gray-500">TrendyolPay İllüstrasyonu Yer Tutucu</span>
+                        </div>
+
+                        <!-- Adım Adım Rehber -->
+                        <div class="space-y-4">
+                            <h3 class="text-lg font-semibold text-gray-800">IBAN / Kolay Adres ile Yükleme Adımları:</h3>
+                            <div class="space-y-4 text-gray-700">
+                                <div class="flex items-start gap-3">
+                                    <span class="w-6 h-6 rounded-full bg-[#ff7f00] text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</span>
+                                    <p>TrendyolPay'deki IBAN'ını veya Kolay Adresini kopyala.</p>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <span class="w-6 h-6 rounded-full bg-[#ff7f00] text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</span>
+                                    <p>Para yatırmak istediğin banka veya ödeme kuruluşunun mobil uygulamasını/web sitesini aç.</p>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <span class="w-6 h-6 rounded-full bg-[#ff7f00] text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</span>
+                                    <p>Para transferleri ekranına (FAST/Havale/EFT) tıkla.</p>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <span class="w-6 h-6 rounded-full bg-[#ff7f00] text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">4</span>
+                                    <p>Kopyaladığın IBAN veya kolay adres bilgisini yapıştır, istenilen bilgileri eksiksiz tamamla ve transferi onayla.</p>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <span class="w-6 h-6 rounded-full bg-[#ff7f00] text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">5</span>
+                                    <p>Tebrikler! Hesabına para geldi! 🎉</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="setState({ isInfoSheetOpen: false })" class="w-full mt-8 bg-[#ff7f00] text-white font-bold p-3 rounded-2xl text-lg shadow-[0_8px_20px_-5px_#ff7f00] hover:bg-[#fa8e20] transition-transform active:scale-[0.98]">
+                            Anladım
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
         // --- ANA RENDER FONKSİYONU ---
 
         function render() {
@@ -992,30 +1008,16 @@
                            </div>`;
             }
 
-            // Bottom Sheet yapısını en üst katmana yerleştirme
             const appMarkup = `
                 <main class="flex-1 overflow-y-auto">
                     ${content}
                 </main>
                 ${renderBottomNav()}
-                <!-- Bottom sheet'i sadece ana konteynırın üzerinde göster -->
-                <div class="fixed inset-0 max-w-[420px] mx-auto ${state.isInfoSheetOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}" style="transition: opacity 0.3s;">
-                    ${renderInfoSheet()}
-                </div>
+                ${renderInfoSheet()}
             `;
             
             APP_CONTAINER.innerHTML = appMarkup;
             
-            // Bottom Sheet'in CSS sınıfını (transform) uygulama
-            const overlay = APP_CONTAINER.querySelector('.bottom-sheet-overlay');
-            if (overlay) {
-                if (state.isInfoSheetOpen) {
-                    APP_CONTAINER.classList.add('bottom-sheet-active');
-                } else {
-                    APP_CONTAINER.classList.remove('bottom-sheet-active');
-                }
-            }
-
             if (window.lucide) {
                 window.lucide.createIcons();
             }
